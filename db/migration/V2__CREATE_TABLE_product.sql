@@ -1,0 +1,8 @@
+CREATE TABLE product (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    sku VARCHAR(50) NOT NULL UNIQUE,
+    price NUMERIC(12,2) NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    category_id BIGINT REFERENCES category(id)
+);
