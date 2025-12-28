@@ -10,26 +10,43 @@ services:
       POSTGRES_PASSWORD: postgres
     ports:
       - "5432:5432"
+    networks:
+      - kenjix_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   flyway:
     image: flyway/flyway
     command: migrate
     container_name: kenjix_flyway
     volumes:
-      - ./db/migration:/flyway/sql
+      - ${PWD}/db/migration:/flyway/sql
     environment:
       FLYWAY_URL: jdbc:postgresql://postgres:5432/estoque
       FLYWAY_USER: postgres
       FLYWAY_PASSWORD: postgres
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - kenjix_net
 
   api:
     build:
-      context: .. 
-      dockerfile: docker/Dockerfile    
+      context: ..
+      dockerfile: docker/Dockerfile
     container_name: kenjix_api
     ports:
       - "8080:8080"
     depends_on:
       - postgres
+    networks:
+      - kenjix_net
+
+networks:
+  kenjix_net:
+    driver: bridge
