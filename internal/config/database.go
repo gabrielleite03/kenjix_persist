@@ -4,9 +4,29 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"sync"
 
 	_ "github.com/lib/pq"
 )
+
+var lock = &sync.Mutex{}
+
+// DatabaseConfig holds the database configuration parameters.
+type DatabaseConnection struct {
+	DB *sql.DB
+}
+
+var singleInstance *DatabaseConnection
+
+func NewDatabaseConfig() *DatabaseConnection {
+	if singleInstance == nil {
+		lock.Lock()
+		defer lock.Unlock()
+		db, _ := openDB()
+		singleInstance = &DatabaseConnection{DB: db}
+	}
+	return singleInstance
+}
 
 // OpenDB opens a postgres connection using environment variables:
 //
@@ -17,12 +37,12 @@ import (
 //	DB_NAME
 //
 // It returns a *sql.DB ready to use.
-func OpenDB() (*sql.DB, error) {
+func openDB() (*sql.DB, error) {
 	host := getenv("DB_HOST", "localhost")
 	port := getenv("DB_PORT", "5432")
-	user := os.Getenv("DB_USER")
-	pass := os.Getenv("DB_PASSWORD")
-	name := os.Getenv("DB_NAME")
+	user := getenv("DB_USER", "postgres")
+	pass := getenv("DB_PASSWORD", "postgres")
+	name := getenv("DB_NAME", "estoque")
 
 	if user == "" || pass == "" || name == "" {
 		return nil, fmt.Errorf("DB_USER, DB_PASSWORD and DB_NAME must be set")

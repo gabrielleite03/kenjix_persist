@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"kenjix.com/persist/internal/config"
 	"kenjix.com/persist/internal/model"
 )
 
@@ -17,8 +18,9 @@ func TestProductDAO_Create_Success(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	defer db.Close()
+	dbConnection := &config.DatabaseConnection{DB: db}
 
-	dao := &productDAO{db: db}
+	dao := &productDAO{dbConnection: dbConnection}
 	ctx := context.Background()
 
 	categoryID := int64(1)
@@ -48,7 +50,9 @@ func TestProductDAO_Create_NilProduct(t *testing.T) {
 	db, _, _ := sqlmock.New()
 	defer db.Close()
 
-	dao := &productDAO{db: db}
+	dbConnection := &config.DatabaseConnection{DB: db}
+
+	dao := &productDAO{dbConnection: dbConnection}
 
 	id, err := dao.Create(context.Background(), nil)
 
@@ -61,7 +65,9 @@ func TestProductDAO_Create_DBError(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	dao := &productDAO{db: db}
+	dbConnection := &config.DatabaseConnection{DB: db}
+
+	dao := &productDAO{dbConnection: dbConnection}
 	ctx := context.Background()
 
 	categoryID := int64(1)
@@ -95,8 +101,9 @@ func TestProductDAO_Create_DBError(t *testing.T) {
 func TestProductDAO_GetByID_Found(t *testing.T) {
 	db, mock, _ := sqlmock.New()
 	defer db.Close()
+	dbConnection := &config.DatabaseConnection{DB: db}
 
-	dao := &productDAO{db: db}
+	dao := &productDAO{dbConnection: dbConnection}
 	ctx := context.Background()
 
 	rows := sqlmock.NewRows(
@@ -120,7 +127,9 @@ func TestProductDAO_GetByID_NotFound(t *testing.T) {
 	db, mock, _ := sqlmock.New()
 	defer db.Close()
 
-	dao := &productDAO{db: db}
+	dbConnection := &config.DatabaseConnection{DB: db}
+
+	dao := &productDAO{dbConnection: dbConnection}
 
 	mock.ExpectQuery(`SELECT id, name, sku, price, active, category_id FROM product`).
 		WithArgs(int64(99)).
@@ -137,7 +146,9 @@ func TestProductDAO_GetByID_DBError(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	dao := &productDAO{db: db}
+	dbConnection := &config.DatabaseConnection{DB: db}
+
+	dao := &productDAO{dbConnection: dbConnection}
 	ctx := context.Background()
 
 	productID := int64(10)
@@ -159,7 +170,9 @@ func TestProductDAO_GetByID_CategoryID_Null(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	dao := &productDAO{db: db}
+	dbConnection := &config.DatabaseConnection{DB: db}
+
+	dao := &productDAO{dbConnection: dbConnection}
 	ctx := context.Background()
 
 	rows := sqlmock.NewRows(
@@ -184,7 +197,9 @@ func TestProductDAO_Update(t *testing.T) {
 	db, mock, _ := sqlmock.New()
 	defer db.Close()
 
-	dao := &productDAO{db: db}
+	dbConnection := &config.DatabaseConnection{DB: db}
+
+	dao := &productDAO{dbConnection: dbConnection}
 
 	prod := &model.Product{
 		ID:     1,
@@ -209,7 +224,9 @@ func TestProductDAO_Update_ProductIsNil(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	dao := &productDAO{db: db}
+	dbConnection := &config.DatabaseConnection{DB: db}
+
+	dao := &productDAO{dbConnection: dbConnection}
 
 	rows, err := dao.Update(context.Background(), nil)
 
@@ -223,7 +240,9 @@ func TestProductDAO_Update_DBError(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	dao := &productDAO{db: db}
+	dbConnection := &config.DatabaseConnection{DB: db}
+
+	dao := &productDAO{dbConnection: dbConnection}
 
 	categoryID := int64(1)
 	prod := &model.Product{
@@ -261,7 +280,9 @@ func TestProductDAO_Delete(t *testing.T) {
 	db, mock, _ := sqlmock.New()
 	defer db.Close()
 
-	dao := &productDAO{db: db}
+	dbConnection := &config.DatabaseConnection{DB: db}
+
+	dao := &productDAO{dbConnection: dbConnection}
 
 	mock.ExpectExec(`DELETE FROM product WHERE id`).
 		WithArgs(int64(5)).
@@ -278,7 +299,9 @@ func TestProductDAO_Delete_DBError(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	dao := &productDAO{db: db}
+	dbConnection := &config.DatabaseConnection{DB: db}
+
+	dao := &productDAO{dbConnection: dbConnection}
 
 	dbErr := errors.New("delete error")
 
@@ -300,7 +323,9 @@ func TestProductDAO_List_QueryError(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	dao := &productDAO{db: db}
+	dbConnection := &config.DatabaseConnection{DB: db}
+
+	dao := &productDAO{dbConnection: dbConnection}
 
 	dbErr := errors.New("query error")
 
@@ -319,8 +344,9 @@ func TestProductDAO_List_ScanError(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	dao := &productDAO{db: db}
+	dbConnection := &config.DatabaseConnection{DB: db}
 
+	dao := &productDAO{dbConnection: dbConnection}
 	rows := sqlmock.NewRows(
 		[]string{"id", "name", "sku", "price", "active", "category_id"},
 	).
@@ -339,9 +365,9 @@ func TestProductDAO_List_RowsError(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	defer db.Close()
+	dbConnection := &config.DatabaseConnection{DB: db}
 
-	dao := &productDAO{db: db}
-
+	dao := &productDAO{dbConnection: dbConnection}
 	rows := sqlmock.NewRows(
 		[]string{"id", "name", "sku", "price", "active", "category_id"},
 	).
@@ -360,9 +386,9 @@ func TestProductDAO_List_RowsError(t *testing.T) {
 func TestProductDAO_List(t *testing.T) {
 	db, mock, _ := sqlmock.New()
 	defer db.Close()
+	dbConnection := &config.DatabaseConnection{DB: db}
 
-	dao := &productDAO{db: db}
-
+	dao := &productDAO{dbConnection: dbConnection}
 	rows := sqlmock.NewRows(
 		[]string{"id", "name", "sku", "price", "active", "category_id"},
 	).
@@ -384,8 +410,9 @@ func TestNewProductRepository(t *testing.T) {
 	db, _, err := sqlmock.New()
 	require.NoError(t, err)
 	defer db.Close()
+	dbConnection := &config.DatabaseConnection{DB: db}
 
-	repo := NewProductRepository(db)
+	repo := NewProductRepository(dbConnection)
 
 	require.NotNil(t, repo)
 
@@ -394,5 +421,5 @@ func TestNewProductRepository(t *testing.T) {
 	require.True(t, ok, "expected ProductRepository to be *productDAO")
 
 	// garante que o db foi injetado corretamente
-	assert.Equal(t, db, dao.db)
+	assert.Equal(t, db, dao.dbConnection.DB)
 }

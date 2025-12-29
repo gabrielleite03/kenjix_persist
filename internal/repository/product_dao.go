@@ -5,17 +5,18 @@ import (
 	"database/sql"
 	"errors"
 
+	"kenjix.com/persist/internal/config"
 	"kenjix.com/persist/internal/model"
 )
 
 // productDAO provides CRUD operations for products
 type productDAO struct {
-	db *sql.DB
+	dbConnection *config.DatabaseConnection
 }
 
 // NewProductRepository creates a new ProductRepository
-func NewProductRepository(db *sql.DB) ProductRepository {
-	return &productDAO{db: db}
+func NewProductRepository(dbConnection *config.DatabaseConnection) ProductRepository {
+	return &productDAO{dbConnection: dbConnection}
 }
 
 // Create inserts a new product and returns the inserted ID
@@ -24,7 +25,7 @@ func (p *productDAO) Create(ctx context.Context, prod *model.Product) (int64, er
 		return 0, errors.New("product is nil")
 	}
 	var id int64
-	err := p.db.QueryRowContext(ctx,
+	err := p.dbConnection.DB.QueryRowContext(ctx,
 		`INSERT INTO product (name, sku, price, active, category_id) VALUES ($1,$2,$3,$4,$5) RETURNING id`,
 		prod.Name, prod.SKU, prod.Price, prod.Active, prod.CategoryID).Scan(&id)
 	if err != nil {
@@ -35,7 +36,7 @@ func (p *productDAO) Create(ctx context.Context, prod *model.Product) (int64, er
 
 // GetByID returns a product by id
 func (p *productDAO) GetByID(ctx context.Context, id int64) (*model.Product, error) {
-	row := p.db.QueryRowContext(ctx, `SELECT id, name, sku, price, active, category_id FROM product WHERE id = $1`, id)
+	row := p.dbConnection.DB.QueryRowContext(ctx, `SELECT id, name, sku, price, active, category_id FROM product WHERE id = $1`, id)
 	prod := &model.Product{}
 	var cat sql.NullInt64
 	if err := row.Scan(&prod.ID, &prod.Name, &prod.SKU, &prod.Price, &prod.Active, &cat); err != nil {
@@ -57,7 +58,7 @@ func (p *productDAO) Update(ctx context.Context, prod *model.Product) (int64, er
 	if prod == nil {
 		return 0, errors.New("product is nil")
 	}
-	res, err := p.db.ExecContext(ctx, `UPDATE product SET name=$1, sku=$2, price=$3, active=$4, category_id=$5 WHERE id=$6`,
+	res, err := p.dbConnection.DB.ExecContext(ctx, `UPDATE product SET name=$1, sku=$2, price=$3, active=$4, category_id=$5 WHERE id=$6`,
 		prod.Name, prod.SKU, prod.Price, prod.Active, prod.CategoryID, prod.ID)
 	if err != nil {
 		return 0, err
@@ -67,7 +68,7 @@ func (p *productDAO) Update(ctx context.Context, prod *model.Product) (int64, er
 
 // Delete removes a product by id. Returns rows affected.
 func (p *productDAO) Delete(ctx context.Context, id int64) (int64, error) {
-	res, err := p.db.ExecContext(ctx, `DELETE FROM product WHERE id=$1`, id)
+	res, err := p.dbConnection.DB.ExecContext(ctx, `DELETE FROM product WHERE id=$1`, id)
 	if err != nil {
 		return 0, err
 	}
@@ -76,7 +77,7 @@ func (p *productDAO) Delete(ctx context.Context, id int64) (int64, error) {
 
 // List returns all products (simple implementation, no pagination)
 func (p *productDAO) List(ctx context.Context) ([]*model.Product, error) {
-	rows, err := p.db.QueryContext(ctx, `SELECT id, name, sku, price, active, category_id FROM product`)
+	rows, err := p.dbConnection.DB.QueryContext(ctx, `SELECT id, name, sku, price, active, category_id FROM product`)
 	if err != nil {
 		return nil, err
 	}
