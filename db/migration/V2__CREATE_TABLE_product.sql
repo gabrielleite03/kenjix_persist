@@ -4,5 +4,6 @@ CREATE TABLE product (
     sku VARCHAR(50) NOT NULL UNIQUE,
     price NUMERIC(12,2) NOT NULL,
     active BOOLEAN NOT NULL DEFAULT TRUE,
-    category_id BIGINT REFERENCES category(id)
+    category_id BIGINT REFERENCES category(id),
+    active BOOLEAN DEFAULT true
 );
