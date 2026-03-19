@@ -18,7 +18,35 @@ entity Product {
   active : Boolean
 }
 
-Category ||--o{ Product
+entity product_property {
+  +id : BIGINT
+  --
+  product_id : BIGINT
+  name : TEXT
+  value : TEXT
+}
+
+entity product_image {
+  +id : BIGINT
+  --
+  product_id : BIGINT
+  url : TEXT
+  position : INT
+  is_primary : BOOLEAN
+}
+
+entity product_video {
+  +id : BIGINT
+  --
+  product_id : BIGINT
+  url : TEXT
+  provider : TEXT
+}
+
+Category ||--o{ Product : "1:N"
+Product ||--o{ product_property : "1:N"
+Product ||--o{ product_image : "1:N"
+Product ||--o{ product_video : "1:N"
 
 ' =========================
 ' LOCALIZAÇÃO / ESTOQUE

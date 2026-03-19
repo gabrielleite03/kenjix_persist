@@ -1,6 +1,6 @@
-module kenjix.com/persist
+module github.com/gabrielleite03/kenjix_persist
 
-go 1.24.5
+go 1.21
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2

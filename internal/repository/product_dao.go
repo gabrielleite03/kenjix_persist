@@ -5,9 +5,18 @@ import (
 	"database/sql"
 	"errors"
 
-	"kenjix.com/persist/internal/config"
-	"kenjix.com/persist/internal/model"
+	"github.com/gabrielleite03/kenjix_persist/internal/config"
+	"github.com/gabrielleite03/kenjix_persist/internal/model"
 )
+
+type ProductRepository interface {
+	Create(ctx context.Context, prod *model.Product) (int64, error)
+	CreateProductProperties(ctx context.Context, productId int64, props map[string]string) (int64, error)
+	GetByID(ctx context.Context, id int64) (*model.Product, error)
+	Update(ctx context.Context, prod *model.Product) (int64, error)
+	Delete(ctx context.Context, id int64) (int64, error)
+	List(ctx context.Context) ([]*model.Product, error)
+}
 
 // productDAO provides CRUD operations for products
 type productDAO struct {
@@ -100,4 +109,24 @@ func (p *productDAO) List(ctx context.Context) ([]*model.Product, error) {
 		return nil, err
 	}
 	return out, nil
+}
+
+// CreateProductProperties implements [ProductRepository].
+func (p *productDAO) CreateProductProperties(ctx context.Context, productId int64, props map[string]string) (int64, error) {
+	for key, value := range props {
+		_, err := insertProperty(p.dbConnection, productId, key, value)
+		if err != nil {
+			return 0, err
+		}
+	}
+	return 0, nil
+}
+
+func insertProperty(dbConnection *config.DatabaseConnection, productId int64, key string, value string) (int64, error) {
+	var id int64
+	err := dbConnection.DB.QueryRow(`INSERT INTO product_property (product_id, key, value) VALUES ($1, $2, $3) RETURNING id`, productId, key, value).Scan(&id)
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
 }

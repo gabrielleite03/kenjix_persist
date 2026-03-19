@@ -1,16 +1,16 @@
 # Build stage
-FROM golang:1.24.5-alpine AS builder
+FROM golang:1.20-alpine AS builder
 WORKDIR /src
 
-# Cache modules (copy only go.mod so build context works when go.sum is absent)
-COPY go.mod ./
+# Cache modules (copy only go.mod and go.sum)
+COPY go.mod go.sum ./
 RUN apk add --no-cache git ca-certificates && \
-	go env -w GOPROXY=https://proxy.golang.org && \
-	go mod download
+    go env -w GOPROXY=https://proxy.golang.org && \
+    go mod download
 
 # Copy source and build
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o /app/kenjix ./cmd/api
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o /app/kenjix ./cmd/api/main.go
 
 # Final stage
 FROM alpine:3.18

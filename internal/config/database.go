@@ -38,6 +38,7 @@ func NewDatabaseConfig() *DatabaseConnection {
 //
 // It returns a *sql.DB ready to use.
 func openDB() (*sql.DB, error) {
+	//host := getenv("DB_HOST", "host.docker.internal")
 	host := getenv("DB_HOST", "localhost")
 	port := getenv("DB_PORT", "5432")
 	user := getenv("DB_USER", "postgres")

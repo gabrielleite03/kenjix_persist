@@ -1,8 +1,8 @@
 package mapper
 
 import (
-	"kenjix.com/persist/internal/dto"
-	"kenjix.com/persist/internal/model"
+	"github.com/gabrielleite03/kenjix_persist/internal/dto"
+	"github.com/gabrielleite03/kenjix_persist/internal/model"
 )
 
 func ProductToDTO(p *model.Product) *dto.ProductDTO {

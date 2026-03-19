@@ -1,9 +1,10 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
 
-	"kenjix.com/persist/internal/service"
+	"github.com/gabrielleite03/kenjix_persist/internal/service"
 )
 
 type ProductHandler struct {
@@ -19,7 +20,16 @@ func NewProductHandler(productService service.ProductService) *ProductHandler {
 }
 
 func (h *ProductHandler) List(w http.ResponseWriter, r *http.Request) {
+	products, err := h.ProductService.ListProducts(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	// fmt.Fprintln(w, "Kenjix Persist API")
-	w.Write([]byte("list products"))
+
+	if err := json.NewEncoder(w).Encode(products); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }

@@ -5,16 +5,23 @@ import (
 	"fmt"
 	"net/http"
 
-	"kenjix.com/persist/cmd/api/handler"
+	"github.com/gabrielleite03/kenjix_persist/cmd/api/handler"
+	"github.com/gabrielleite03/kenjix_persist/internal/config"
+	"github.com/gabrielleite03/kenjix_persist/internal/repository"
+	"github.com/gabrielleite03/kenjix_persist/internal/service"
 )
 
 type Router struct {
 	productHandler *handler.ProductHandler
 }
 
-func NewRouter(productHandler *handler.ProductHandler) *Router {
+func NewRouter() *Router {
+	dbConection := config.NewDatabaseConfig()
+	repo := repository.NewProductRepository(dbConection)
+	svc := service.NewProductService(repo)
+	h := handler.NewProductHandler(svc)
 	return &Router{
-		productHandler: productHandler,
+		productHandler: h,
 	}
 }
 

@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"kenjix.com/persist/internal/config"
-	"kenjix.com/persist/internal/model"
+	"github.com/gabrielleite03/kenjix_persist/internal/config"
+	"github.com/gabrielleite03/kenjix_persist/internal/model"
 )
 
 func TestProductDAO_Create_Success(t *testing.T) {

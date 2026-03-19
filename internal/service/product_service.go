@@ -3,13 +3,15 @@ package service
 import (
 	"context"
 
-	"kenjix.com/persist/internal/model"
-	"kenjix.com/persist/internal/repository"
+	"github.com/gabrielleite03/kenjix_persist/internal/dto"
+	"github.com/gabrielleite03/kenjix_persist/internal/model"
+	"github.com/gabrielleite03/kenjix_persist/internal/repository"
+	"github.com/gabrielleite03/kenjix_persist/internal/wrapper"
 )
 
 type ProductService interface {
-	CreateProduct(ctx context.Context, prod *model.Product) (int64, error)
-	GetProduct(ctx context.Context, id int64) (*model.Product, error)
+	CreateProduct(ctx context.Context, prod *dto.ProductDTO) (int64, error)
+	GetProduct(ctx context.Context, id int64) (*dto.ProductDTO, error)
 	UpdateProduct(ctx context.Context, prod *model.Product) (int64, error)
 	DeleteProduct(ctx context.Context, id int64) (int64, error)
 	ListProducts(ctx context.Context) ([]*model.Product, error)
@@ -28,13 +30,22 @@ func NewProductService(repo repository.ProductRepository) ProductService {
 }
 
 // CreateProduct creates a new product
-func (s *productServiceImpl) CreateProduct(ctx context.Context, prod *model.Product) (int64, error) {
-	return s.repo.Create(ctx, prod)
+func (s *productServiceImpl) CreateProduct(ctx context.Context, prod *dto.ProductDTO) (int64, error) {
+	productModel := prod.ToProductModel()
+	prodId, err := s.repo.Create(ctx, productModel)
+	s.repo.CreateProductProperties(ctx, prodId, prod.Properties)
+	return prodId, err
 }
 
 // GetProduct retrieves a product by ID
-func (s *productServiceImpl) GetProduct(ctx context.Context, id int64) (*model.Product, error) {
-	return s.repo.GetByID(ctx, id)
+func (s *productServiceImpl) GetProduct(ctx context.Context, id int64) (*dto.ProductDTO, error) {
+	productModel, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return wrapper.NewProductDTOFromModel(productModel), nil
+
 }
 
 // UpdateProduct updates an existing product

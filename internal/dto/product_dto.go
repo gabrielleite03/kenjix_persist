@@ -1,5 +1,7 @@
 package dto
 
+import "github.com/gabrielleite03/kenjix_persist/internal/model"
+
 // ProductDTO represents the data transfer object for a product
 type ProductDTO struct {
 	ID         int64   `json:"id"`
@@ -12,4 +14,18 @@ type ProductDTO struct {
 	Properties map[string]string `json:"properties,omitempty"`
 	Images     []string          `json:"images,omitempty"`
 	Videos     []string          `json:"videos,omitempty"`
+}
+
+func (s *ProductDTO) ToProductModel() *model.Product {
+	if s == nil {
+		return nil
+	}
+	return &model.Product{
+		ID:         s.ID,
+		Name:       s.Name,
+		SKU:        s.SKU,
+		Price:      s.Price,
+		Active:     s.Active,
+		CategoryID: s.CategoryID,
+	}
 }
