@@ -4,6 +4,7 @@ go 1.21
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
+	github.com/gabrielleite03/kenjix_domain v0.0.1
 	github.com/lib/pq v1.10.9
 	github.com/stretchr/testify v1.11.1
 )

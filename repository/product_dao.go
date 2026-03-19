@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"errors"
 
+	model "github.com/gabrielleite03/kenjix_domain/model"
 	"github.com/gabrielleite03/kenjix_persist/internal/config"
-	"github.com/gabrielleite03/kenjix_persist/internal/model"
 )
 
 type ProductRepository interface {
@@ -24,8 +24,8 @@ type productDAO struct {
 }
 
 // NewProductRepository creates a new ProductRepository
-func NewProductRepository(dbConnection *config.DatabaseConnection) ProductRepository {
-	return &productDAO{dbConnection: dbConnection}
+func NewProductRepository() ProductRepository {
+	return &productDAO{dbConnection: config.NewDatabaseConfig()}
 }
 
 // Create inserts a new product and returns the inserted ID

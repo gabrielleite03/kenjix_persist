@@ -10,8 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	model "github.com/gabrielleite03/kenjix_domain/model"
 	"github.com/gabrielleite03/kenjix_persist/internal/config"
-	"github.com/gabrielleite03/kenjix_persist/internal/model"
 )
 
 func TestProductDAO_Create_Success(t *testing.T) {
@@ -404,22 +404,4 @@ func TestProductDAO_List(t *testing.T) {
 	assert.Len(t, list, 2)
 	assert.Nil(t, list[0].CategoryID)
 	assert.NotNil(t, list[1].CategoryID)
-}
-
-func TestNewProductRepository(t *testing.T) {
-	db, _, err := sqlmock.New()
-	require.NoError(t, err)
-	defer db.Close()
-	dbConnection := &config.DatabaseConnection{DB: db}
-
-	repo := NewProductRepository(dbConnection)
-
-	require.NotNil(t, repo)
-
-	// garante que é a implementação correta
-	dao, ok := repo.(*productDAO)
-	require.True(t, ok, "expected ProductRepository to be *productDAO")
-
-	// garante que o db foi injetado corretamente
-	assert.Equal(t, db, dao.dbConnection.DB)
 }
