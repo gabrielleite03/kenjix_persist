@@ -1,5 +1,6 @@
 CREATE TABLE category (
-    id BIGSERIAL PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
+    description VARCHAR(500) NOT NULL,
     active BOOLEAN DEFAULT true
 );

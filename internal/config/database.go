@@ -6,6 +6,7 @@ import (
 	"os"
 	"sync"
 
+	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 )
 
@@ -37,7 +38,7 @@ func NewDatabaseConfig() *DatabaseConnection {
 //	DB_NAME
 //
 // It returns a *sql.DB ready to use.
-func openDB() (*sql.DB, error) {
+func openDBPostGres() (*sql.DB, error) {
 	//host := getenv("DB_HOST", "host.docker.internal")
 	host := getenv("DB_HOST", "localhost")
 	port := getenv("DB_PORT", "5432")
@@ -54,6 +55,34 @@ func openDB() (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
+	return db, nil
+}
+
+func openDB() (*sql.DB, error) {
+	//host := getenv("DB_HOST", "host.docker.internal")
+	host := getenv("DB_HOST", "localhost")
+	port := getenv("DB_PORT", "3306")
+	user := getenv("DB_USER", "root")
+	pass := getenv("DB_PASSWORD", "root")
+	name := getenv("DB_NAME", "estoque")
+
+	if user == "" || name == "" {
+		return nil, fmt.Errorf("DB_USER and DB_NAME must be set")
+	}
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&charset=utf8mb4&loc=Local",
+		user,
+		pass,
+		host,
+		port,
+		name,
+	)
+
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return nil, err
+	}
+
 	return db, nil
 }
 
