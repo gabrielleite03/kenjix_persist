@@ -6,9 +6,10 @@ toolchain go1.24.5
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
-	github.com/gabrielleite03/kenjix_domain v0.0.1
+	github.com/gabrielleite03/kenjix_domain v0.0.4
 	github.com/go-sql-driver/mysql v1.9.3
 	github.com/lib/pq v1.10.9
+	github.com/shopspring/decimal v1.4.0
 	github.com/stretchr/testify v1.11.1
 )
 
