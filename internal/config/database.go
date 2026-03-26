@@ -59,15 +59,15 @@ func openDBPostGres() (*sql.DB, error) {
 }
 
 func openDB() (*sql.DB, error) {
-	//host := getenv("DB_HOST", "host.docker.internal")
-	host := getenv("DB_HOST", "localhost")
-	port := getenv("DB_PORT", "3306")
-	user := getenv("DB_USER", "root")
-	pass := getenv("DB_PASSWORD", "root")
-	name := getenv("DB_NAME", "estoque")
+	//host := getenv("MYSQL_HOST", "host.docker.internal")
+	host := getenv("MYSQL_HOST", "localhost")
+	port := getenv("MYSQL_PORT", "3306")
+	user := getenv("MYSQL_USER", "root")
+	pass := getenv("MYSQL_ROOT_PASSWORD", "root")
+	name := getenv("MYSQL_DATABASE_KENJIX", "estoque")
 
 	if user == "" || name == "" {
-		return nil, fmt.Errorf("DB_USER and DB_NAME must be set")
+		return nil, fmt.Errorf("MYSQL_PORT and MYSQL_DATABASE_KENJIX must be set")
 	}
 
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&charset=utf8mb4&loc=Local",

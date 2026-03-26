@@ -3,6 +3,8 @@ CREATE TABLE product (
     name VARCHAR(150) NOT NULL,
     sku VARCHAR(50) NOT NULL UNIQUE,
     price DECIMAL(12,2) NOT NULL,
+    marca VARCHAR(150) NOT NULL,
+    description VARCHAR(500) NOT NULL,
     active TINYINT(1) NOT NULL DEFAULT 1,
     category_id BIGINT,
     PRIMARY KEY (id),
