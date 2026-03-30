@@ -30,8 +30,7 @@ func (d *warehouseDAO) Create(w *model.Warehouse) (*model.Warehouse, error) {
 		return nil, errors.New("warehouse is nil")
 	}
 
-	query := `INSERT INTO warehouse (name, address, capacity, active) 
-			  VALUES (?, ?, ?)`
+	query := `INSERT INTO warehouse (name, address, capacity) VALUES (?, ?, ?)`
 
 	result, err := d.db.Exec(
 		query,
