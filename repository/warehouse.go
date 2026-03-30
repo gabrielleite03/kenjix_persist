@@ -8,16 +8,24 @@ import (
 	"github.com/gabrielleite03/kenjix_persist/internal/config"
 )
 
-type WarehouseDAO struct {
+type WarehouseDAO interface {
+	Create(w *model.Warehouse) (*model.Warehouse, error)
+	Update(w *model.Warehouse) (*model.Warehouse, error)
+	FindByID(id int64) (*model.Warehouse, error)
+	FindAll() ([]*model.Warehouse, error)
+	Delete(id int64) error
+}
+
+type warehouseDAO struct {
 	db *sql.DB
 }
 
-func NewWarehouseDAO() *WarehouseDAO {
-	return &WarehouseDAO{db: config.NewDatabaseConfig().DB}
+func NewWarehouseDAO() WarehouseDAO {
+	return &warehouseDAO{db: config.NewDatabaseConfig().DB}
 }
 
 // Create insere um novo warehouse
-func (d *WarehouseDAO) Create(w *model.Warehouse) (*model.Warehouse, error) {
+func (d *warehouseDAO) Create(w *model.Warehouse) (*model.Warehouse, error) {
 	if w == nil {
 		return nil, errors.New("warehouse is nil")
 	}
@@ -34,7 +42,7 @@ func (d *WarehouseDAO) Create(w *model.Warehouse) (*model.Warehouse, error) {
 }
 
 // Update atualiza um warehouse existente
-func (d *WarehouseDAO) Update(w *model.Warehouse) (*model.Warehouse, error) {
+func (d *warehouseDAO) Update(w *model.Warehouse) (*model.Warehouse, error) {
 	if w == nil {
 		return nil, errors.New("warehouse is nil")
 	}
@@ -49,7 +57,7 @@ func (d *WarehouseDAO) Update(w *model.Warehouse) (*model.Warehouse, error) {
 }
 
 // FindByID retorna um warehouse pelo ID
-func (d *WarehouseDAO) FindByID(id int64) (*model.Warehouse, error) {
+func (d *warehouseDAO) FindByID(id int64) (*model.Warehouse, error) {
 	var w model.Warehouse
 	query := `SELECT id, name, address, capacity, active FROM warehouse WHERE id=$1`
 	err := d.db.QueryRow(query, id).Scan(&w.ID, &w.Name, &w.Address, &w.Capacity, &w.Active)
@@ -63,7 +71,7 @@ func (d *WarehouseDAO) FindByID(id int64) (*model.Warehouse, error) {
 }
 
 // FindAll retorna todos os warehouses
-func (d *WarehouseDAO) FindAll() ([]*model.Warehouse, error) {
+func (d *warehouseDAO) FindAll() ([]*model.Warehouse, error) {
 	rows, err := d.db.Query(`SELECT id, name, address, capacity, active FROM warehouse`)
 	if err != nil {
 		return nil, err
@@ -83,7 +91,7 @@ func (d *WarehouseDAO) FindAll() ([]*model.Warehouse, error) {
 }
 
 // Delete remove um warehouse pelo ID
-func (d *WarehouseDAO) Delete(id int64) error {
+func (d *warehouseDAO) Delete(id int64) error {
 	_, err := d.db.Exec(`DELETE FROM warehouse WHERE id=$1`, id)
 	return err
 }
