@@ -31,12 +31,24 @@ func (d *warehouseDAO) Create(w *model.Warehouse) (*model.Warehouse, error) {
 	}
 
 	query := `INSERT INTO warehouse (name, address, capacity, active) 
-			  VALUES ($1, $2, $3, $4) RETURNING id`
+			  VALUES (?, ?, ?)`
 
-	err := d.db.QueryRow(query, w.Name, w.Address, w.Capacity, w.Active).Scan(&w.ID)
+	result, err := d.db.Exec(
+		query,
+		w.Name,
+		w.Address,
+		w.Capacity,
+	)
+
 	if err != nil {
 		return nil, err
 	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+	w.ID = id
 
 	return w, nil
 }
@@ -47,8 +59,16 @@ func (d *warehouseDAO) Update(w *model.Warehouse) (*model.Warehouse, error) {
 		return nil, errors.New("warehouse is nil")
 	}
 
-	query := `UPDATE warehouse SET name=$1, address=$2, capacity=$3, active=$4 WHERE id=$5`
-	_, err := d.db.Exec(query, w.Name, w.Address, w.Capacity, w.Active, w.ID)
+	query := `UPDATE warehouse SET name=?, address=?, capacity=?, active=? WHERE id=?`
+
+	_, err := d.db.Exec(
+		query,
+		w.Name,
+		w.Address,
+		w.Capacity,
+		w.Active,
+		w.ID,
+	)
 	if err != nil {
 		return nil, err
 	}
