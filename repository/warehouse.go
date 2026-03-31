@@ -14,6 +14,12 @@ type WarehouseDAO interface {
 	FindByID(id int64) (*model.Warehouse, error)
 	FindAll() ([]*model.Warehouse, error)
 	Delete(id int64) error
+
+	CreateWarehousePlaceType(w *model.WarehousePlaceType) (*model.WarehousePlaceType, error)
+	UpdateWarehousePlaceType(w *model.WarehousePlaceType) (*model.WarehousePlaceType, error)
+	FindByIDWarehousePlaceType(id int64) (*model.WarehousePlaceType, error)
+	FindAllWarehousePlaceType() ([]*model.WarehousePlaceType, error)
+	DeleteWarehousePlaceType(id int64) error
 }
 
 type warehouseDAO struct {
@@ -112,5 +118,96 @@ func (d *warehouseDAO) FindAll() ([]*model.Warehouse, error) {
 // Delete remove um warehouse pelo ID
 func (d *warehouseDAO) Delete(id int64) error {
 	_, err := d.db.Exec(`DELETE FROM warehouse WHERE id=$1`, id)
+	return err
+}
+
+func (d *warehouseDAO) CreateWarehousePlaceType(w *model.WarehousePlaceType) (*model.WarehousePlaceType, error) {
+	if w == nil {
+		return nil, errors.New("warehouse place type is nil")
+	}
+
+	query := `INSERT INTO warehouse_place_type (name, value) VALUES (?, ?, ?)`
+
+	result, err := d.db.Exec(query, w.Name, w.Value)
+	if err != nil {
+		return nil, err
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	w.ID = id
+	return w, nil
+}
+
+func (d *warehouseDAO) UpdateWarehousePlaceType(w *model.WarehousePlaceType) (*model.WarehousePlaceType, error) {
+	if w == nil {
+		return nil, errors.New("warehouse place type is nil")
+	}
+
+	query := `UPDATE warehouse_place_type 
+	          SET name=?, value=?, active=? 
+	          WHERE id=?`
+
+	_, err := d.db.Exec(query, w.Name, w.Value, w.Active, w.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	return w, nil
+}
+
+func (d *warehouseDAO) FindByIDWarehousePlaceType(id int64) (*model.WarehousePlaceType, error) {
+	var w model.WarehousePlaceType
+
+	query := `SELECT id, name, value, active 
+	          FROM warehouse_place_type 
+	          WHERE id=?`
+
+	err := d.db.QueryRow(query, id).
+		Scan(&w.ID, &w.Name, &w.Value, &w.Active)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	return &w, nil
+}
+
+func (d *warehouseDAO) FindAllWarehousePlaceType() ([]*model.WarehousePlaceType, error) {
+	rows, err := d.db.Query(`
+		SELECT id, name, value, active 
+		FROM warehouse_place_type
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var list []*model.WarehousePlaceType
+
+	for rows.Next() {
+		var w model.WarehousePlaceType
+		err := rows.Scan(&w.ID, &w.Name, &w.Value, &w.Active)
+		if err != nil {
+			return nil, err
+		}
+
+		list = append(list, &w)
+	}
+
+	return list, nil
+}
+
+func (d *warehouseDAO) DeleteWarehousePlaceType(id int64) error {
+	_, err := d.db.Exec(
+		`DELETE FROM warehouse_place_type WHERE id=?`,
+		id,
+	)
 	return err
 }

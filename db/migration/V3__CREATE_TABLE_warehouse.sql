@@ -16,6 +16,7 @@ CREATE TABLE warehouse_place_type (
 CREATE TABLE warehouse_place (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(150) NOT NULL,
+    capacity BIGINT,
     active BOOLEAN NOT NULL DEFAULT TRUE,
     warehouse_place_type_id BIGINT,
     warehouse_id BIGINT,
