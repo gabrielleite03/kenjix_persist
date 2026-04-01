@@ -226,8 +226,8 @@ func (d *warehouseDAO) CreateWarehousePlace(w *model.WarehousePlace) (*model.War
 
 	query := `
 		INSERT INTO warehouse_place 
-		(name, warehouse_place_type_id, warehouse_id)
-		VALUES (?, ?, ?)
+		(name, warehouse_place_type_id, warehouse_id, capacity)
+		VALUES (?, ?, ?, ?)
 	`
 
 	result, err := d.db.Exec(
@@ -235,6 +235,7 @@ func (d *warehouseDAO) CreateWarehousePlace(w *model.WarehousePlace) (*model.War
 		w.Name,
 		w.WarehousePlaceTypeID,
 		w.WarehouseID,
+		w.Capacity,
 	)
 	if err != nil {
 		return nil, err
@@ -256,7 +257,7 @@ func (d *warehouseDAO) UpdateWarehousePlace(w *model.WarehousePlace) (*model.War
 
 	query := `
 		UPDATE warehouse_place 
-		SET name=?, active=?, warehouse_place_type_id=?
+		SET name=?, active=?, warehouse_place_type_id=?, capacity=?
 		WHERE id=?
 	`
 
@@ -265,6 +266,7 @@ func (d *warehouseDAO) UpdateWarehousePlace(w *model.WarehousePlace) (*model.War
 		w.Name,
 		w.Active,
 		w.WarehousePlaceTypeID,
+		w.Capacity,
 		w.ID,
 	)
 
@@ -279,7 +281,7 @@ func (d *warehouseDAO) FindByIDWarehousePlace(id int64) (*model.WarehousePlace, 
 	var w model.WarehousePlace
 
 	query := `
-		SELECT id, name, active, warehouse_place_type_id, warehouse_id
+		SELECT id, name, active, warehouse_place_type_id, warehouse_id, capacity
 		FROM warehouse_place
 		WHERE id=?
 	`
@@ -291,6 +293,7 @@ func (d *warehouseDAO) FindByIDWarehousePlace(id int64) (*model.WarehousePlace, 
 			&w.Active,
 			&w.WarehousePlaceTypeID,
 			&w.WarehouseID,
+			&w.Capacity,
 		)
 
 	if err != nil {
@@ -305,7 +308,7 @@ func (d *warehouseDAO) FindByIDWarehousePlace(id int64) (*model.WarehousePlace, 
 
 func (d *warehouseDAO) FindByWarehouseID(warehouseID int64) ([]*model.WarehousePlace, error) {
 	rows, err := d.db.Query(`
-		SELECT id, name, active, warehouse_place_type_id, warehouse_id
+		SELECT id, name, active, warehouse_place_type_id, warehouse_id, capacity
 		FROM warehouse_place
 		WHERE warehouse_id = ?
 	`, warehouseID)
@@ -326,6 +329,7 @@ func (d *warehouseDAO) FindByWarehouseID(warehouseID int64) ([]*model.WarehouseP
 			&w.Active,
 			&w.WarehousePlaceTypeID,
 			&w.WarehouseID,
+			&w.Capacity,
 		)
 		if err != nil {
 			return nil, err
@@ -339,7 +343,7 @@ func (d *warehouseDAO) FindByWarehouseID(warehouseID int64) ([]*model.WarehouseP
 
 func (d *warehouseDAO) FindAllWarehousePlace() ([]*model.WarehousePlace, error) {
 	rows, err := d.db.Query(`
-		SELECT id, name, active, warehouse_place_type_id, warehouse_id
+		SELECT id, name, active, warehouse_place_type_id, warehouse_id, capacity
 		FROM warehouse_place
 	`)
 	if err != nil {
@@ -358,6 +362,7 @@ func (d *warehouseDAO) FindAllWarehousePlace() ([]*model.WarehousePlace, error) 
 			&w.Active,
 			&w.WarehousePlaceTypeID,
 			&w.WarehouseID,
+			&w.Capacity,
 		)
 		if err != nil {
 			return nil, err
