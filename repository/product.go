@@ -178,6 +178,10 @@ func (d *productDAO) List() ([]model.Product, error) {
 
 		p.Price, _ = decimal.NewFromString(price)
 
+		d.loadProperties(&p)
+		d.loadImages(&p)
+		d.loadVideos(&p)
+
 		list = append(list, p)
 	}
 
