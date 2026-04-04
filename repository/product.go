@@ -181,6 +181,7 @@ func (d *productDAO) List() ([]model.Product, error) {
 		d.loadProperties(&p)
 		d.loadImages(&p)
 		d.loadVideos(&p)
+		d.loadCategory(&p)
 
 		list = append(list, p)
 	}
@@ -277,5 +278,16 @@ func (d *productDAO) loadVideos(p *model.Product) {
 		var v model.ProductVideo
 		rows.Scan(&v.ID, &v.ProductID, &v.URL, &v.Provider)
 		p.Videos = append(p.Videos, v)
+	}
+}
+
+func (d *productDAO) loadCategory(p *model.Product) {
+
+	CategoryDAO := NewCategoryDAO()
+	if p.CategoryID != nil {
+		c, err := CategoryDAO.GetByID(*p.CategoryID)
+		if err == nil {
+			p.Category = c
+		}
 	}
 }
