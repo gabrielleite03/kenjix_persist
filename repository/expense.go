@@ -127,13 +127,18 @@ func (d *expenseDAO) FindByID(id int64) (*model.Expense, error) {
 }
 
 func (d *expenseDAO) Create(exp *model.Expense) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
 	query := `
 	INSERT INTO expenses
-	( description, category_id, amount, date, status)
-	VALUES ( ?, ?, ?, ?, ?)
+	(description, category_id, amount, date, status)
+	VALUES (?, ?, ?, ?, ?)
 	`
 
-	_, err := d.db.Exec(
+	result, err := tx.Exec(
 		query,
 		exp.Description,
 		exp.CategoryID,
@@ -141,11 +146,41 @@ func (d *expenseDAO) Create(exp *model.Expense) error {
 		exp.Date,
 		exp.Status,
 	)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
 
-	return err
+	id, err := result.LastInsertId()
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	exp.ID = id
+
+	// salvar attachments
+	for _, att := range exp.Attachments {
+		_, err := tx.Exec(
+			"INSERT INTO expense_attachments (expense_id, url) VALUES (?, ?)",
+			exp.ID,
+			att.URL,
+		)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
 
 func (d *expenseDAO) Update(exp *model.Expense) error {
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
 	query := `
 	UPDATE expenses SET
 	description = ?,
@@ -156,7 +191,7 @@ func (d *expenseDAO) Update(exp *model.Expense) error {
 	WHERE id = ?
 	`
 
-	_, err := d.db.Exec(
+	_, err = tx.Exec(
 		query,
 		exp.Description,
 		exp.CategoryID,
@@ -165,8 +200,35 @@ func (d *expenseDAO) Update(exp *model.Expense) error {
 		exp.Status,
 		exp.ID,
 	)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
 
-	return err
+	// remove attachments antigos
+	_, err = tx.Exec(
+		"DELETE FROM expense_attachments WHERE expense_id = ?",
+		exp.ID,
+	)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// reinsere attachments
+	for _, att := range exp.Attachments {
+		_, err := tx.Exec(
+			"INSERT INTO expense_attachments (expense_id, url) VALUES (?, ?)",
+			exp.ID,
+			att.URL,
+		)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
 }
 
 func (d *expenseDAO) Delete(id int64) error {
