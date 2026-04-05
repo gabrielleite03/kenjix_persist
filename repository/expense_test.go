@@ -58,7 +58,6 @@ func TestExpenseDAO_Create(t *testing.T) {
 	dao := &expenseDAO{db: db}
 
 	exp := &model.Expense{
-		ID:          "1",
 		Description: "Internet",
 		CategoryID:  1,
 		Amount:      decimal.NewFromFloat(99.9),
@@ -68,7 +67,6 @@ func TestExpenseDAO_Create(t *testing.T) {
 
 	mock.ExpectExec("INSERT INTO expenses").
 		WithArgs(
-			exp.ID,
 			exp.Description,
 			exp.CategoryID,
 			exp.Amount,

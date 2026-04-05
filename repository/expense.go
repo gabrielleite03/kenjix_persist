@@ -129,13 +129,12 @@ func (d *expenseDAO) FindByID(id string) (*model.Expense, error) {
 func (d *expenseDAO) Create(exp *model.Expense) error {
 	query := `
 	INSERT INTO expenses
-	(id, description, category_id, amount, date, status)
-	VALUES (?, ?, ?, ?, ?, ?)
+	( description, category_id, amount, date, status)
+	VALUES ( ?, ?, ?, ?, ?)
 	`
 
 	_, err := d.db.Exec(
 		query,
-		exp.ID,
 		exp.Description,
 		exp.CategoryID,
 		exp.Amount,

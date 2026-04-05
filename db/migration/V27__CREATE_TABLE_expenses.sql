@@ -10,7 +10,7 @@ DEFAULT CHARSET=utf8mb4
 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS expenses (
-    id VARCHAR(36) PRIMARY KEY,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     description VARCHAR(255) NOT NULL,
     category_id INT NOT NULL,
     amount DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
@@ -24,13 +24,13 @@ CREATE TABLE IF NOT EXISTS expenses (
         REFERENCES expenses_category(id)
         ON UPDATE CASCADE
         ON DELETE RESTRICT
-) ENGINE=InnoDB 
-DEFAULT CHARSET=utf8mb4 
+) ENGINE=InnoDB
+DEFAULT CHARSET=utf8mb4
 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS expense_attachments (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    expense_id VARCHAR(36) NOT NULL,
+    expense_id BIGINT NOT NULL,
     url VARCHAR(500) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
