@@ -9,12 +9,12 @@ import (
 
 type ExpenseDAO interface {
 	FindAll() ([]model.Expense, error)
-	FindByID(id string) (*model.Expense, error)
+	FindByID(id int64) (*model.Expense, error)
 	Create(expense *model.Expense) error
 	Update(expense *model.Expense) error
-	Delete(id string) error
+	Delete(id int64) error
 
-	AddAttachment(expenseID string, url string) error
+	AddAttachment(expenseID int64, url string) error
 	RemoveAttachment(id int64) error
 }
 
@@ -81,7 +81,7 @@ func (d *expenseDAO) FindAll() ([]model.Expense, error) {
 	return expenses, nil
 }
 
-func (d *expenseDAO) FindByID(id string) (*model.Expense, error) {
+func (d *expenseDAO) FindByID(id int64) (*model.Expense, error) {
 	query := `
 	SELECT 
 		e.id, e.description, e.category_id, e.amount, e.date, e.status,
@@ -169,12 +169,12 @@ func (d *expenseDAO) Update(exp *model.Expense) error {
 	return err
 }
 
-func (d *expenseDAO) Delete(id string) error {
+func (d *expenseDAO) Delete(id int64) error {
 	_, err := d.db.Exec("DELETE FROM expenses WHERE id = ?", id)
 	return err
 }
 
-func (d *expenseDAO) getAttachments(expenseID string) ([]model.ExpenseAttachment, error) {
+func (d *expenseDAO) getAttachments(expenseID int64) ([]model.ExpenseAttachment, error) {
 	rows, err := d.db.Query(
 		"SELECT id, expense_id, url, created_at FROM expense_attachments WHERE expense_id = ?",
 		expenseID,
@@ -204,7 +204,7 @@ func (d *expenseDAO) getAttachments(expenseID string) ([]model.ExpenseAttachment
 	return attachments, nil
 }
 
-func (d *expenseDAO) AddAttachment(expenseID string, url string) error {
+func (d *expenseDAO) AddAttachment(expenseID int64, url string) error {
 	_, err := d.db.Exec(
 		"INSERT INTO expense_attachments (expense_id, url) VALUES (?, ?)",
 		expenseID,

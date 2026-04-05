@@ -87,10 +87,10 @@ func TestExpenseDAO_Delete(t *testing.T) {
 	dao := &expenseDAO{db: db}
 
 	mock.ExpectExec("DELETE FROM expenses").
-		WithArgs("1").
+		WithArgs(1).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
-	err := dao.Delete("1")
+	err := dao.Delete(1)
 
 	assert.NoError(t, err)
 }
