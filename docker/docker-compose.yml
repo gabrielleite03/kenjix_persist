@@ -22,7 +22,7 @@ services:
 
   flyway:
     image: flyway/flyway
-    command: -connectRetries=60 migrate
+    command: -connectRetries=60 -baselineOnMigrate=false migrate
     container_name: kenjix_flyway
     volumes:
       - ../db/migration:/flyway/sql
