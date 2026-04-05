@@ -13,9 +13,9 @@ type ExpenseDAO interface {
 	Create(expense *model.Expense) error
 	Update(expense *model.Expense) error
 	Delete(id int64) error
-
 	AddAttachment(expenseID int64, url string) error
 	RemoveAttachment(id int64) error
+	FindAllExpenseCategories() ([]model.ExpenseCategory, error)
 }
 
 type expenseDAO struct {
@@ -281,4 +281,35 @@ func (d *expenseDAO) RemoveAttachment(id int64) error {
 		id,
 	)
 	return err
+}
+
+func (d *expenseDAO) FindAllExpenseCategories() ([]model.ExpenseCategory, error) {
+	rows, err := d.db.Query(`
+		SELECT id, name, created_at, updated_at
+		FROM expenses_category
+		ORDER BY name
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var categories []model.ExpenseCategory
+
+	for rows.Next() {
+		var c model.ExpenseCategory
+		err := rows.Scan(
+			&c.ID,
+			&c.Name,
+			&c.CreatedAt,
+			&c.UpdatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		categories = append(categories, c)
+	}
+
+	return categories, nil
 }

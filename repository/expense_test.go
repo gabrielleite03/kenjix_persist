@@ -175,3 +175,38 @@ func TestExpenseDAO_FindByID(t *testing.T) {
 	assert.Len(t, exp.Attachments, 1)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
+
+func TestExpenseDAO_FindAllExpenseCategories(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	dao := &expenseDAO{db: db}
+
+	now := time.Now()
+
+	rows := sqlmock.NewRows([]string{
+		"id",
+		"name",
+		"created_at",
+		"updated_at",
+	}).
+		AddRow(1, "Alimentação", now, now).
+		AddRow(2, "Higiene", now, now)
+
+	mock.ExpectQuery(`SELECT id, name, created_at, updated_at FROM expenses_category ORDER BY name`).
+		WillReturnRows(rows)
+
+	result, err := dao.FindAllExpenseCategories()
+
+	assert.NoError(t, err)
+	assert.Len(t, result, 2)
+
+	assert.Equal(t, int64(1), result[0].ID)
+	assert.Equal(t, "Alimentação", result[0].Name)
+
+	assert.Equal(t, int64(2), result[1].ID)
+	assert.Equal(t, "Higiene", result[1].Name)
+
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
