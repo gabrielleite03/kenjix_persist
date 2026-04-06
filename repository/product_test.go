@@ -38,8 +38,8 @@ func TestCreate(t *testing.T) {
 
 	mock.ExpectExec(regexp.QuoteMeta(`
 		INSERT INTO product
-		(name, sku, price, marca, description, category_id)
-		VALUES (?, ?, ?, ?, ?, ?)
+		(name, sku, price, marca, description, category_id, volume)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`)).
 		WithArgs(
 			product.Name,
@@ -48,6 +48,7 @@ func TestCreate(t *testing.T) {
 			product.Marca,
 			product.Description,
 			product.CategoryID,
+			product.Volume.String(),
 		).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
@@ -87,7 +88,7 @@ func TestUpdateExpense(t *testing.T) {
 
 	mock.ExpectExec(regexp.QuoteMeta(`
 		UPDATE product
-		SET name=?, sku=?, price=?, marca=?, description=?, active=?, category_id=?
+		SET name=?, sku=?, price=?, marca=?, description=?, active=?, category_id=?, volume=?
 		WHERE id=?
 	`)).
 		WithArgs(
@@ -99,6 +100,7 @@ func TestUpdateExpense(t *testing.T) {
 			product.Active,
 			product.CategoryID,
 			product.ID,
+			product.Volume.String(),
 		).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 

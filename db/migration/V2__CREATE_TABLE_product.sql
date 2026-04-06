@@ -6,6 +6,7 @@ CREATE TABLE product (
     marca VARCHAR(150) NOT NULL,
     description VARCHAR(500) NOT NULL,
     active TINYINT(1) NOT NULL DEFAULT 1,
+    volume DECIMAL(12,2) NOT NULL,
     category_id BIGINT,
     PRIMARY KEY (id),
     CONSTRAINT fk_product_category

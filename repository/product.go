@@ -32,8 +32,8 @@ func (d *productDAO) Create(p *model.Product) error {
 
 	query := `
 		INSERT INTO product
-		(name, sku, price, marca, description, category_id)
-		VALUES (?, ?, ?, ?, ?, ?)
+		(name, sku, price, marca, description, category_id, volume)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := tx.Exec(
@@ -44,6 +44,7 @@ func (d *productDAO) Create(p *model.Product) error {
 		p.Marca,
 		p.Description,
 		p.CategoryID,
+		p.Volume.String(),
 	)
 	if err != nil {
 		tx.Rollback()
@@ -79,7 +80,7 @@ func (d *productDAO) Update(p *model.Product) error {
 
 	query := `
 		UPDATE product
-		SET name=?, sku=?, price=?, marca=?, description=?, active=?, category_id=?
+		SET name=?, sku=?, price=?, marca=?, description=?, active=?, category_id=?, volume=?
 		WHERE id=?
 	`
 
@@ -93,6 +94,7 @@ func (d *productDAO) Update(p *model.Product) error {
 		p.Active,
 		p.CategoryID,
 		p.ID,
+		p.Volume.String(),
 	)
 	if err != nil {
 		tx.Rollback()

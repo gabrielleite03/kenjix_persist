@@ -9,5 +9,5 @@ CREATE TABLE `product_prices` (
     CONSTRAINT `fk_product_prices_product` FOREIGN KEY (`product_id`)
         REFERENCES `product` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT `fk_product_prices_marketplace` FOREIGN KEY (`marketplace_id`)
-        REFERENCES `marketplaces` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+        REFERENCES `marketplace` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

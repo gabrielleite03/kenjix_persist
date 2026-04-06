@@ -1,6 +1,7 @@
 CREATE TABLE stock (
     product_id BIGINT NOT NULL,
     warehouse_id BIGINT NOT NULL,
+    warehouse_place_id BIGINT NOT NULL,
     quantity INT NOT NULL DEFAULT 0,
     active BOOLEAN DEFAULT TRUE,
 
