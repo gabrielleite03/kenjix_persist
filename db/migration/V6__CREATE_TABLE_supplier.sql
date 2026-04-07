@@ -1,19 +1,24 @@
 CREATE TABLE supplier (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(150) NOT NULL,
+    
+    razao_social VARCHAR(255) NOT NULL,
+    nome_fantasia VARCHAR(255) NOT NULL,
     cnpj VARCHAR(20) NOT NULL,
-    country VARCHAR(100),
-    email VARCHAR(100),
-    phone VARCHAR(100),
-    seller VARCHAR(100),
-    seller_fone VARCHAR(100),
-    active BOOLEAN DEFAULT TRUE,
-    category_id BIGINT,
-
-    CONSTRAINT uk_supplier_cnpj UNIQUE (cnpj),
+    
+    ie VARCHAR(50) NULL,
+    address VARCHAR(255) NULL,
+    sales_person VARCHAR(255) NULL,
+    email VARCHAR(255) NULL,
+    phone VARCHAR(50) NULL,
+    
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    
+    category_id BIGINT NULL,
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_supplier_category
         FOREIGN KEY (category_id)
         REFERENCES category(id)
-
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+);

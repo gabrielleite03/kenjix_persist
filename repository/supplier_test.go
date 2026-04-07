@@ -8,6 +8,7 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gabrielleite03/kenjix_domain/model"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func setupTest(t *testing.T) (*sql.DB, sqlmock.Sqlmock, SupplierDAO) {
@@ -21,28 +22,63 @@ func setupTest(t *testing.T) (*sql.DB, sqlmock.Sqlmock, SupplierDAO) {
 }
 
 func TestSupplierDAO_FindAll(t *testing.T) {
-	db, mock, dao := setupTest(t)
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
 	defer db.Close()
 
+	dao := &supplierDAO{db: db}
+
 	rows := sqlmock.NewRows([]string{
-		"id", "razao_social", "nome_fantasia", "cnpj",
-		"ie", "address", "sales_person", "email",
-		"phone", "active", "category_id",
+		"id",
+		"razao_social",
+		"nome_fantasia",
+		"cnpj",
+		"ie",
+		"address",
+		"sales_person",
+		"email",
+		"phone",
+		"active",
+		"category_id",
+		"id",
+		"name",
+		"description",
+		"active",
 	}).AddRow(
-		1, "Empresa LTDA", "Empresa", "123",
-		nil, nil, nil, nil,
-		nil, true, nil,
+		1,
+		"Fornecedor LTDA",
+		"Fornecedor",
+		"123456",
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		true,
+		2,
+		2,
+		"Categoria Teste",
+		"Descricao",
+		true,
 	)
 
-	mock.ExpectQuery(regexp.QuoteMeta("FROM supplier")).
+	mock.ExpectQuery("SELECT (.+) FROM supplier").
 		WillReturnRows(rows)
 
 	result, err := dao.FindAll()
 
-	assert.NoError(t, err)
-	assert.Len(t, result, 1)
-	assert.Equal(t, int64(1), result[0].ID)
-	assert.Equal(t, "Empresa LTDA", result[0].RazaoSocial)
+	require.NoError(t, err)
+	require.Len(t, result, 1)
+
+	s := result[0]
+
+	assert.Equal(t, int64(1), s.ID)
+	assert.Equal(t, "Fornecedor LTDA", s.RazaoSocial)
+	assert.NotNil(t, s.Category)
+	assert.Equal(t, int64(2), s.Category.ID)
+	assert.Equal(t, "Categoria Teste", s.Category.Name)
+
+	require.NoError(t, mock.ExpectationsWereMet())
 }
 
 func TestSupplierDAO_FindByID(t *testing.T) {

@@ -26,19 +26,24 @@ func NewSupplierDAO(db *sql.DB) SupplierDAO {
 func (d *supplierDAO) FindAll() ([]model.Supplier, error) {
 	query := `
 		SELECT 
-			id,
-			razao_social,
-			nome_fantasia,
-			cnpj,
-			ie,
-			address,
-			sales_person,
-			email,
-			phone,
-			active,
-			category_id
-		FROM supplier
-		ORDER BY razao_social
+			s.id,
+			s.razao_social,
+			s.nome_fantasia,
+			s.cnpj,
+			s.ie,
+			s.address,
+			s.sales_person,
+			s.email,
+			s.phone,
+			s.active,
+			s.category_id,
+			c.id,
+			c.name,
+			c.description,
+			c.active
+		FROM supplier s
+		LEFT JOIN category c ON c.id = s.category_id
+		ORDER BY s.razao_social
 	`
 
 	rows, err := d.db.Query(query)
@@ -51,6 +56,7 @@ func (d *supplierDAO) FindAll() ([]model.Supplier, error) {
 
 	for rows.Next() {
 		var s model.Supplier
+		var c model.Category
 
 		err := rows.Scan(
 			&s.ID,
@@ -64,10 +70,19 @@ func (d *supplierDAO) FindAll() ([]model.Supplier, error) {
 			&s.Phone,
 			&s.Active,
 			&s.CategoryID,
+			&c.ID,
+			&c.Name,
+			&c.Description,
+			&c.Active,
 		)
 
 		if err != nil {
 			return nil, err
+		}
+
+		// se houver categoria vinculada
+		if s.CategoryID != nil {
+			s.Category = &c
 		}
 
 		suppliers = append(suppliers, s)
