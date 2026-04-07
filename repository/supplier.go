@@ -19,7 +19,7 @@ type supplierDAO struct {
 	db *sql.DB
 }
 
-func NewSupplierDAO(db *sql.DB) SupplierDAO {
+func NewSupplierDAO() SupplierDAO {
 	return &supplierDAO{db: config.NewDatabaseConfig().DB}
 }
 
