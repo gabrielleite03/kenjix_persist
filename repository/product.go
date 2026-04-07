@@ -122,6 +122,7 @@ func (d *productDAO) GetByID(id int64) (*model.Product, error) {
 
 	var p model.Product
 	var price string
+	var volume sql.NullString
 
 	err := d.db.QueryRow(query, id).Scan(
 		&p.ID,
@@ -132,13 +133,20 @@ func (d *productDAO) GetByID(id int64) (*model.Product, error) {
 		&p.Description,
 		&p.Active,
 		&p.CategoryID,
-		&p.Volume,
+		&volume,
 	)
 	if err != nil {
 		return nil, err
 	}
 
 	p.Price, _ = decimal.NewFromString(price)
+
+	if volume.Valid {
+		v, _ := decimal.NewFromString(volume.String)
+		p.Volume = v
+	} else {
+		p.Volume = decimal.Zero
+	}
 
 	d.loadProperties(&p)
 	d.loadImages(&p)

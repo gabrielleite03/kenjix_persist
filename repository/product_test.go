@@ -133,7 +133,7 @@ func TestGetByID(t *testing.T) {
 	defer db.Close()
 
 	rows := sqlmock.NewRows([]string{
-		"id", "name", "sku", "price", "marca", "description", "active", "category_id",
+		"id", "name", "sku", "price", "marca", "description", "active", "category_id", "volume",
 	}).AddRow(
 		1,
 		"Produto",
@@ -143,10 +143,11 @@ func TestGetByID(t *testing.T) {
 		"Descricao",
 		true,
 		nil,
+		nil, // volume NULL para testar
 	)
 
 	mock.ExpectQuery(regexp.QuoteMeta(`
-		SELECT id, name, sku, price, marca, description, active, category_id
+		SELECT id, name, sku, price, marca, description, active, category_id, volume
 		FROM product WHERE id=?
 	`)).
 		WithArgs(1).
