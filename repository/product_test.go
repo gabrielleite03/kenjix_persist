@@ -99,8 +99,8 @@ func TestUpdateExpense(t *testing.T) {
 			product.Description,
 			product.Active,
 			product.CategoryID,
-			product.ID,
 			product.Volume.String(),
+			product.ID,
 		).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 

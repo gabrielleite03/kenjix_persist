@@ -93,8 +93,9 @@ func (d *productDAO) Update(p *model.Product) error {
 		p.Description,
 		p.Active,
 		p.CategoryID,
-		p.ID,
+
 		p.Volume.String(),
+		p.ID,
 	)
 	if err != nil {
 		tx.Rollback()
