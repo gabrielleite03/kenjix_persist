@@ -1,16 +1,11 @@
 CREATE TABLE stock_movement (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     product_id BIGINT NOT NULL,
-    warehouse_id BIGINT NOT NULL,
-    type ENUM('IN','OUT','ADJUSTMENT') NOT NULL,
+    warehouse_place_id BIGINT NOT NULL,
+    type VARCHAR(20) NOT NULL,
     quantity INT NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    reason VARCHAR(20) NOT NULL,
-
-    CONSTRAINT fk_stock_movement_product
-        FOREIGN KEY (product_id) REFERENCES product(id),
-
-    CONSTRAINT fk_stock_movement_warehouse
-        FOREIGN KEY (warehouse_id) REFERENCES warehouse(id)
-
+    reference_id BIGINT NULL,
+    reference_type VARCHAR(20) NULL,
+    reason VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
