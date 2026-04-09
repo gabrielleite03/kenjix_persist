@@ -113,3 +113,72 @@ func TestPurchaseDAO_FindAll(t *testing.T) {
 	assert.Len(t, list, 1)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
+
+func (d *PurchaseDAO) UpdatePurchase(p *model.Purchase) error {
+
+	tx, err := d.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	updateQuery := `
+		UPDATE purchase
+		SET invoice_number = ?, 
+		    invoice_type = ?, 
+		    supplier_id = ?, 
+		    status = ?, 
+		    total = ?
+		WHERE id = ?
+	`
+
+	_, err = tx.Exec(
+		updateQuery,
+		p.InvoiceNumber,
+		p.InvoiceType,
+		p.SupplierID,
+		p.Status,
+		p.Total,
+		p.ID,
+	)
+
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// remove itens antigos
+	deleteItemsQuery := `DELETE FROM purchase_item WHERE purchase_id = ?`
+
+	_, err = tx.Exec(deleteItemsQuery, p.ID)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// recria itens
+	insertItemQuery := `
+		INSERT INTO purchase_item
+		(purchase_id, product_id, quantity, cost_price, total, cost_center_id)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`
+
+	for _, item := range p.Items {
+
+		_, err := tx.Exec(
+			insertItemQuery,
+			p.ID,
+			item.ProductID,
+			item.Quantity,
+			item.CostPrice,
+			item.Total,
+			item.CostCenterID,
+		)
+
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	return tx.Commit()
+}
