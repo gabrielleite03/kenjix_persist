@@ -34,10 +34,17 @@ type warehouseDAO struct {
 }
 
 func NewWarehouseDAO() WarehouseDAO {
-	return &warehouseDAO{db: config.NewDatabaseConfig().DB}
+	return &warehouseDAO{
+		db: config.NewDatabaseConfig().DB,
+	}
 }
 
-// Create insere um novo warehouse
+//
+// =========================
+// WAREHOUSE
+// =========================
+//
+
 func (d *warehouseDAO) Create(w *model.Warehouse) (*model.Warehouse, error) {
 	if w == nil {
 		return nil, errors.New("warehouse is nil")
@@ -45,13 +52,7 @@ func (d *warehouseDAO) Create(w *model.Warehouse) (*model.Warehouse, error) {
 
 	query := `INSERT INTO warehouse (name, address, capacity) VALUES (?, ?, ?)`
 
-	result, err := d.db.Exec(
-		query,
-		w.Name,
-		w.Address,
-		w.Capacity,
-	)
-
+	result, err := d.db.Exec(query, w.Name, w.Address, w.Capacity)
 	if err != nil {
 		return nil, err
 	}
@@ -60,12 +61,11 @@ func (d *warehouseDAO) Create(w *model.Warehouse) (*model.Warehouse, error) {
 	if err != nil {
 		return nil, err
 	}
-	w.ID = id
 
+	w.ID = id
 	return w, nil
 }
 
-// Update atualiza um warehouse existente
 func (d *warehouseDAO) Update(w *model.Warehouse) (*model.Warehouse, error) {
 	if w == nil {
 		return nil, errors.New("warehouse is nil")
@@ -73,36 +73,33 @@ func (d *warehouseDAO) Update(w *model.Warehouse) (*model.Warehouse, error) {
 
 	query := `UPDATE warehouse SET name=?, address=?, capacity=?, active=? WHERE id=?`
 
-	_, err := d.db.Exec(
-		query,
-		w.Name,
-		w.Address,
-		w.Capacity,
-		w.Active,
-		w.ID,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return w, nil
+	_, err := d.db.Exec(query, w.Name, w.Address, w.Capacity, w.Active, w.ID)
+	return w, err
 }
 
-// FindByID retorna um warehouse pelo ID
 func (d *warehouseDAO) FindByID(id int64) (*model.Warehouse, error) {
 	var w model.Warehouse
-	query := `SELECT id, name, address, capacity, active FROM warehouse WHERE id=$1`
-	err := d.db.QueryRow(query, id).Scan(&w.ID, &w.Name, &w.Address, &w.Capacity, &w.Active)
+
+	query := `SELECT id, name, address, capacity, active FROM warehouse WHERE id=?`
+
+	err := d.db.QueryRow(query, id).Scan(
+		&w.ID,
+		&w.Name,
+		&w.Address,
+		&w.Capacity,
+		&w.Active,
+	)
+
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, err
 	}
+
 	return &w, nil
 }
 
-// FindAll retorna todos os warehouses
 func (d *warehouseDAO) FindAll() ([]*model.Warehouse, error) {
 	rows, err := d.db.Query(`SELECT id, name, address, capacity, active FROM warehouse`)
 	if err != nil {
@@ -110,30 +107,44 @@ func (d *warehouseDAO) FindAll() ([]*model.Warehouse, error) {
 	}
 	defer rows.Close()
 
-	var warehouses []*model.Warehouse
+	var list []*model.Warehouse
+
 	for rows.Next() {
 		var w model.Warehouse
-		if err := rows.Scan(&w.ID, &w.Name, &w.Address, &w.Capacity, &w.Active); err != nil {
+
+		if err := rows.Scan(
+			&w.ID,
+			&w.Name,
+			&w.Address,
+			&w.Capacity,
+			&w.Active,
+		); err != nil {
 			return nil, err
 		}
-		warehouses = append(warehouses, &w)
+
+		list = append(list, &w)
 	}
 
-	return warehouses, nil
+	return list, nil
 }
 
-// Delete remove um warehouse pelo ID
 func (d *warehouseDAO) Delete(id int64) error {
-	_, err := d.db.Exec(`DELETE FROM warehouse WHERE id=$1`, id)
+	_, err := d.db.Exec(`DELETE FROM warehouse WHERE id=?`, id)
 	return err
 }
+
+//
+// =========================
+// WAREHOUSE PLACE TYPE
+// =========================
+//
 
 func (d *warehouseDAO) CreateWarehousePlaceType(w *model.WarehousePlaceType) (*model.WarehousePlaceType, error) {
 	if w == nil {
 		return nil, errors.New("warehouse place type is nil")
 	}
 
-	query := `INSERT INTO warehouse_place_type (name, value) VALUES (?, ?, ?)`
+	query := `INSERT INTO warehouse_place_type (name, value) VALUES (?, ?)`
 
 	result, err := d.db.Exec(query, w.Name, w.Value)
 	if err != nil {
@@ -154,27 +165,23 @@ func (d *warehouseDAO) UpdateWarehousePlaceType(w *model.WarehousePlaceType) (*m
 		return nil, errors.New("warehouse place type is nil")
 	}
 
-	query := `UPDATE warehouse_place_type 
-	          SET name=?, value=?, active=? 
-	          WHERE id=?`
+	query := `UPDATE warehouse_place_type SET name=?, value=?, active=? WHERE id=?`
 
 	_, err := d.db.Exec(query, w.Name, w.Value, w.Active, w.ID)
-	if err != nil {
-		return nil, err
-	}
-
-	return w, nil
+	return w, err
 }
 
 func (d *warehouseDAO) FindByIDWarehousePlaceType(id int64) (*model.WarehousePlaceType, error) {
 	var w model.WarehousePlaceType
 
-	query := `SELECT id, name, value, active 
-	          FROM warehouse_place_type 
-	          WHERE id=?`
+	query := `SELECT id, name, value, active FROM warehouse_place_type WHERE id=?`
 
-	err := d.db.QueryRow(query, id).
-		Scan(&w.ID, &w.Name, &w.Value, &w.Active)
+	err := d.db.QueryRow(query, id).Scan(
+		&w.ID,
+		&w.Name,
+		&w.Value,
+		&w.Active,
+	)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -187,10 +194,7 @@ func (d *warehouseDAO) FindByIDWarehousePlaceType(id int64) (*model.WarehousePla
 }
 
 func (d *warehouseDAO) FindAllWarehousePlaceType() ([]*model.WarehousePlaceType, error) {
-	rows, err := d.db.Query(`
-		SELECT id, name, value, active 
-		FROM warehouse_place_type
-	`)
+	rows, err := d.db.Query(`SELECT id, name, value, active FROM warehouse_place_type`)
 	if err != nil {
 		return nil, err
 	}
@@ -200,8 +204,13 @@ func (d *warehouseDAO) FindAllWarehousePlaceType() ([]*model.WarehousePlaceType,
 
 	for rows.Next() {
 		var w model.WarehousePlaceType
-		err := rows.Scan(&w.ID, &w.Name, &w.Value, &w.Active)
-		if err != nil {
+
+		if err := rows.Scan(
+			&w.ID,
+			&w.Name,
+			&w.Value,
+			&w.Active,
+		); err != nil {
 			return nil, err
 		}
 
@@ -212,12 +221,15 @@ func (d *warehouseDAO) FindAllWarehousePlaceType() ([]*model.WarehousePlaceType,
 }
 
 func (d *warehouseDAO) DeleteWarehousePlaceType(id int64) error {
-	_, err := d.db.Exec(
-		`DELETE FROM warehouse_place_type WHERE id=?`,
-		id,
-	)
+	_, err := d.db.Exec(`DELETE FROM warehouse_place_type WHERE id=?`, id)
 	return err
 }
+
+//
+// =========================
+// WAREHOUSE PLACE
+// =========================
+//
 
 func (d *warehouseDAO) CreateWarehousePlace(w *model.WarehousePlace) (*model.WarehousePlace, error) {
 	if w == nil {
@@ -230,13 +242,13 @@ func (d *warehouseDAO) CreateWarehousePlace(w *model.WarehousePlace) (*model.War
 		VALUES (?, ?, ?, ?)
 	`
 
-	result, err := d.db.Exec(
-		query,
+	result, err := d.db.Exec(query,
 		w.Name,
 		w.WarehousePlaceTypeID,
 		w.WarehouseID,
 		w.Capacity,
 	)
+
 	if err != nil {
 		return nil, err
 	}
@@ -261,8 +273,7 @@ func (d *warehouseDAO) UpdateWarehousePlace(w *model.WarehousePlace) (*model.War
 		WHERE id=?
 	`
 
-	_, err := d.db.Exec(
-		query,
+	_, err := d.db.Exec(query,
 		w.Name,
 		w.Active,
 		w.WarehousePlaceTypeID,
@@ -270,11 +281,7 @@ func (d *warehouseDAO) UpdateWarehousePlace(w *model.WarehousePlace) (*model.War
 		w.ID,
 	)
 
-	if err != nil {
-		return nil, err
-	}
-
-	return w, nil
+	return w, err
 }
 
 func (d *warehouseDAO) FindByIDWarehousePlace(id int64) (*model.WarehousePlace, error) {
@@ -286,15 +293,14 @@ func (d *warehouseDAO) FindByIDWarehousePlace(id int64) (*model.WarehousePlace, 
 		WHERE id=?
 	`
 
-	err := d.db.QueryRow(query, id).
-		Scan(
-			&w.ID,
-			&w.Name,
-			&w.Active,
-			&w.WarehousePlaceTypeID,
-			&w.WarehouseID,
-			&w.Capacity,
-		)
+	err := d.db.QueryRow(query, id).Scan(
+		&w.ID,
+		&w.Name,
+		&w.Active,
+		&w.WarehousePlaceTypeID,
+		&w.WarehouseID,
+		&w.Capacity,
+	)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -323,15 +329,14 @@ func (d *warehouseDAO) FindByWarehouseID(warehouseID int64) ([]*model.WarehouseP
 	for rows.Next() {
 		var w model.WarehousePlace
 
-		err := rows.Scan(
+		if err := rows.Scan(
 			&w.ID,
 			&w.Name,
 			&w.Active,
 			&w.WarehousePlaceTypeID,
 			&w.WarehouseID,
 			&w.Capacity,
-		)
-		if err != nil {
+		); err != nil {
 			return nil, err
 		}
 
@@ -356,15 +361,14 @@ func (d *warehouseDAO) FindAllWarehousePlace() ([]*model.WarehousePlace, error) 
 	for rows.Next() {
 		var w model.WarehousePlace
 
-		err := rows.Scan(
+		if err := rows.Scan(
 			&w.ID,
 			&w.Name,
 			&w.Active,
 			&w.WarehousePlaceTypeID,
 			&w.WarehouseID,
 			&w.Capacity,
-		)
-		if err != nil {
+		); err != nil {
 			return nil, err
 		}
 
@@ -375,9 +379,6 @@ func (d *warehouseDAO) FindAllWarehousePlace() ([]*model.WarehousePlace, error) 
 }
 
 func (d *warehouseDAO) DeleteWarehousePlace(id int64) error {
-	_, err := d.db.Exec(
-		`DELETE FROM warehouse_place WHERE id=?`,
-		id,
-	)
+	_, err := d.db.Exec(`DELETE FROM warehouse_place WHERE id=?`, id)
 	return err
 }
