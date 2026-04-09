@@ -1,18 +1,19 @@
-CREATE TABLE purchase_order_item (
-    purchase_order_id BIGINT NOT NULL,
+CREATE TABLE purchase_item (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    purchase_id BIGINT NOT NULL,
     product_id BIGINT NOT NULL,
-    quantity INT NOT NULL,
-    unit_price DECIMAL(12,2) NOT NULL,
-    active BOOLEAN DEFAULT TRUE,
+    quantity DECIMAL(15,4) NOT NULL,
+    cost_price DECIMAL(15,4) NOT NULL,
+    total DECIMAL(15,2) NOT NULL,
+    cost_center_id BIGINT NULL,
 
-    PRIMARY KEY (purchase_order_id, product_id),
+    CONSTRAINT fk_purchase_item_purchase
+        FOREIGN KEY (purchase_id) REFERENCES purchase(id)
+        ON DELETE CASCADE,
 
-    CONSTRAINT fk_poi_purchase_order
-        FOREIGN KEY (purchase_order_id)
-        REFERENCES purchase_order(id),
+    CONSTRAINT fk_purchase_item_product
+        FOREIGN KEY (product_id) REFERENCES product(id),
 
-    CONSTRAINT fk_poi_product
-        FOREIGN KEY (product_id)
-        REFERENCES product(id)
-
+    CONSTRAINT fk_purchase_item_cost_center
+        FOREIGN KEY (cost_center_id) REFERENCES cost_center(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
