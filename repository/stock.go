@@ -60,7 +60,7 @@ func (d *StockDAO) Update(stock *model.Stock) error {
 func (d *StockDAO) Get(productID, warehousePlaceID int64) (*model.Stock, error) {
 
 	query := `
-	SELECT product_id, warehouse_place_id, quantity, active, updated_at
+	SELECT id, product_id, warehouse_place_id, quantity, active, updated_at
 	FROM stock
 	WHERE product_id = ? AND warehouse_place_id = ?
 	`
@@ -70,6 +70,7 @@ func (d *StockDAO) Get(productID, warehousePlaceID int64) (*model.Stock, error) 
 	var s model.Stock
 
 	err := row.Scan(
+		&s.ID,
 		&s.ProductID,
 		&s.WarehousePlaceID,
 		&s.Quantity,
@@ -178,7 +179,7 @@ func (d *StockDAO) InsertMovementTx(tx *sql.Tx, m *model.StockMovement) error {
 func (d *StockDAO) GetByProduct(productID int64) ([]model.Stock, error) {
 
 	query := `
-	SELECT product_id, warehouse_place_id, quantity, active, updated_at
+	SELECT id, product_id, warehouse_place_id, quantity, active, updated_at
 	FROM stock
 	WHERE product_id = ?
 	`
@@ -195,6 +196,7 @@ func (d *StockDAO) GetByProduct(productID int64) ([]model.Stock, error) {
 		var s model.Stock
 
 		err := rows.Scan(
+			&s.ID,
 			&s.ProductID,
 			&s.WarehousePlaceID,
 			&s.Quantity,
@@ -214,7 +216,7 @@ func (d *StockDAO) GetByProduct(productID int64) ([]model.Stock, error) {
 func (d *StockDAO) GetAll() ([]model.Stock, error) {
 
 	query := `
-	SELECT product_id, warehouse_place_id, quantity, active, updated_at
+	SELECT id, product_id, warehouse_place_id, quantity, active, updated_at
 	FROM stock
 	ORDER BY product_id, warehouse_place_id
 	`
@@ -231,6 +233,7 @@ func (d *StockDAO) GetAll() ([]model.Stock, error) {
 		var s model.Stock
 
 		err := rows.Scan(
+			&s.ID,
 			&s.ProductID,
 			&s.WarehousePlaceID,
 			&s.Quantity,

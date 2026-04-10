@@ -94,15 +94,16 @@ func TestStockDAO_Get(t *testing.T) {
 	now := time.Now()
 
 	rows := sqlmock.NewRows([]string{
+		"id",
 		"product_id",
 		"warehouse_place_id",
 		"quantity",
 		"active",
 		"updated_at",
-	}).AddRow(1, 2, 10, true, now)
+	}).AddRow(1, 1, 2, 10, true, now)
 
 	query := regexp.QuoteMeta(`
-	SELECT product_id, warehouse_place_id, quantity, active, updated_at
+	SELECT id, product_id, warehouse_place_id, quantity, active, updated_at
 	FROM stock
 	WHERE product_id = ? AND warehouse_place_id = ?
 	`)
@@ -201,17 +202,18 @@ func TestStockDAO_GetAll(t *testing.T) {
 	now := time.Now()
 
 	rows := sqlmock.NewRows([]string{
+		"id",
 		"product_id",
 		"warehouse_place_id",
 		"quantity",
 		"active",
 		"updated_at",
 	}).
-		AddRow(1, 1, 10, true, now).
-		AddRow(1, 2, 5, true, now)
+		AddRow(1, 1, 1, 10, true, now).
+		AddRow(1, 1, 2, 5, true, now)
 
 	query := regexp.QuoteMeta(`
-	SELECT product_id, warehouse_place_id, quantity, active, updated_at
+	SELECT id, product_id, warehouse_place_id, quantity, active, updated_at
 	FROM stock
 	ORDER BY product_id, warehouse_place_id
 	`)
