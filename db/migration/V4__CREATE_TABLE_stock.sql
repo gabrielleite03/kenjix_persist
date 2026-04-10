@@ -1,8 +1,10 @@
 CREATE TABLE stock (
+    id BIGINT NOT NULL AUTO_INCREMENT,
     product_id BIGINT NOT NULL,
     warehouse_place_id BIGINT NOT NULL,
     quantity INT NOT NULL DEFAULT 0,
-    active BOOLEAN NOT NULL DEFAULT true,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    PRIMARY KEY (product_id, warehouse_place_id)
+
+    PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

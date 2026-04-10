@@ -15,15 +15,14 @@ func NewStockDAO() *StockDAO {
 	return &StockDAO{db: config.NewDatabaseConfig().DB}
 }
 
-func (d *StockDAO) Upsert(stock *model.Stock) error {
+func (d *StockDAO) Create(stock *model.Stock) error {
 
 	query := `
-	INSERT INTO stock (product_id, warehouse_place_id, quantity, active)
-	VALUES (?, ?, ?, ?)
-	ON DUPLICATE KEY UPDATE
-	    quantity = quantity + VALUES(quantity),
-	    active = VALUES(active),
-	    updated_at = NOW()
+		INSERT INTO stock (
+			product_id,
+			warehouse_place_id,
+			quantity
+		) VALUES (?, ?, ?)
 	`
 
 	_, err := d.db.Exec(
@@ -31,7 +30,28 @@ func (d *StockDAO) Upsert(stock *model.Stock) error {
 		stock.ProductID,
 		stock.WarehousePlaceID,
 		stock.Quantity,
-		stock.Active,
+	)
+
+	return err
+}
+
+func (d *StockDAO) Update(stock *model.Stock) error {
+
+	query := `
+		UPDATE stock
+		SET
+			product_id = ?,
+			warehouse_place_id = ?,
+			quantity = ?
+		WHERE id = ?
+	`
+
+	_, err := d.db.Exec(
+		query,
+		stock.ProductID,
+		stock.WarehousePlaceID,
+		stock.Quantity,
+		stock.ID,
 	)
 
 	return err

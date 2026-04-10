@@ -17,34 +17,72 @@ func newMock() (*sql.DB, sqlmock.Sqlmock, *StockDAO) {
 	return db, mock, dao
 }
 
-func TestStockDAO_Upsert(t *testing.T) {
-
-	db, mock, dao := newMock()
+func TestStockDAO_Create(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
 	defer db.Close()
+
+	dao := &StockDAO{db: db}
 
 	stock := &model.Stock{
 		ProductID:        1,
 		WarehousePlaceID: 2,
 		Quantity:         10,
-		Active:           true,
 	}
 
-	query := regexp.QuoteMeta(`
-	INSERT INTO stock (product_id, warehouse_place_id, quantity, active)
-	VALUES (?, ?, ?, ?)
-	ON DUPLICATE KEY UPDATE
-	    quantity = quantity + VALUES(quantity),
-	    active = VALUES(active),
-	    updated_at = NOW()
-	`)
+	query := `
+		INSERT INTO stock \(
+			product_id,
+			warehouse_place_id,
+			quantity
+		\) VALUES \(\?, \?, \?\)
+	`
 
 	mock.ExpectExec(query).
-		WithArgs(1, 2, 10, true).
+		WithArgs(stock.ProductID, stock.WarehousePlaceID, stock.Quantity).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
-	err := dao.Upsert(stock)
-
+	err = dao.Create(stock)
 	assert.NoError(t, err)
+
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestStockDAO_Update(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	dao := &StockDAO{db: db}
+
+	stock := &model.Stock{
+		ID:               1,
+		ProductID:        1,
+		WarehousePlaceID: 2,
+		Quantity:         20,
+	}
+
+	query := `
+		UPDATE stock
+		SET
+			product_id = \?,
+			warehouse_place_id = \?,
+			quantity = \?
+		WHERE id = \?
+	`
+
+	mock.ExpectExec(query).
+		WithArgs(
+			stock.ProductID,
+			stock.WarehousePlaceID,
+			stock.Quantity,
+			stock.ID,
+		).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	err = dao.Update(stock)
+	assert.NoError(t, err)
+
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
