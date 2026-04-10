@@ -15,20 +15,32 @@ func NewStockDAO() *StockDAO {
 	return &StockDAO{db: config.NewDatabaseConfig().DB}
 }
 
+type StockMovementDAO struct {
+	db *sql.DB
+}
+
+func NewStockMovementDAO() *StockMovementDAO {
+	return &StockMovementDAO{
+		db: config.NewDatabaseConfig().DB,
+	}
+}
+
 func (d *StockDAO) Create(stock *model.Stock) error {
 
 	query := `
-		INSERT INTO stock (
-			product_id,
-			warehouse_place_id,
-			quantity
-		) VALUES (?, ?, ?)
+	INSERT INTO stock (
+		product_id,
+		warehouse_place_id,
+		purchase_item_id,
+		quantity
+	) VALUES (?, ?, ?, ?)
 	`
 
 	_, err := d.db.Exec(
 		query,
-		stock.ProductID,
-		stock.WarehousePlaceID,
+		stock.Product.ID,
+		stock.WarehousePlace.ID,
+		stock.PurchaseItem.ID,
 		stock.Quantity,
 	)
 
@@ -38,41 +50,53 @@ func (d *StockDAO) Create(stock *model.Stock) error {
 func (d *StockDAO) Update(stock *model.Stock) error {
 
 	query := `
-		UPDATE stock
-		SET
-			product_id = ?,
-			warehouse_place_id = ?,
-			quantity = ?
-		WHERE id = ?
+	UPDATE stock
+	SET
+		product_id = ?,
+		warehouse_place_id = ?,
+		purchase_item_id = ?,
+		quantity = ?,
+		active = ?
+	WHERE id = ?
 	`
 
 	_, err := d.db.Exec(
 		query,
-		stock.ProductID,
-		stock.WarehousePlaceID,
+		stock.Product.ID,
+		stock.WarehousePlace.ID,
+		stock.PurchaseItem.ID,
 		stock.Quantity,
+		stock.Active,
 		stock.ID,
 	)
 
 	return err
 }
 
-func (d *StockDAO) Get(productID, warehousePlaceID int64) (*model.Stock, error) {
+func (d *StockDAO) GetByID(id int64) (*model.Stock, error) {
 
 	query := `
-	SELECT id, product_id, warehouse_place_id, quantity, active, updated_at
+	SELECT
+		id,
+		product_id,
+		warehouse_place_id,
+		purchase_item_id,
+		quantity,
+		active,
+		updated_at
 	FROM stock
-	WHERE product_id = ? AND warehouse_place_id = ?
+	WHERE id = ?
 	`
 
-	row := d.db.QueryRow(query, productID, warehousePlaceID)
+	row := d.db.QueryRow(query, id)
 
 	var s model.Stock
 
 	err := row.Scan(
 		&s.ID,
-		&s.ProductID,
-		&s.WarehousePlaceID,
+		&s.Product.ID,
+		&s.WarehousePlace.ID,
+		&s.PurchaseItem.ID,
 		&s.Quantity,
 		&s.Active,
 		&s.UpdatedAt,
@@ -85,101 +109,61 @@ func (d *StockDAO) Get(productID, warehousePlaceID int64) (*model.Stock, error) 
 	return &s, nil
 }
 
-func (d *StockDAO) InsertMovement(m *model.StockMovement) error {
+func (d *StockDAO) Get(
+	productID,
+	warehousePlaceID,
+	purchaseItemID int64,
+) (*model.Stock, error) {
 
 	query := `
-	INSERT INTO stock_movement
-	(product_id, warehouse_place_id, type, quantity, reference_id, reference_type, reason)
-	VALUES (?, ?, ?, ?, ?, ?, ?)
+	SELECT
+		id,
+		quantity,
+		active,
+		updated_at
+	FROM stock
+	WHERE product_id = ?
+	  AND warehouse_place_id = ?
+	  AND purchase_item_id = ?
 	`
 
-	_, err := d.db.Exec(
+	row := d.db.QueryRow(
 		query,
-		m.ProductID,
-		m.WarehousePlaceID,
-		m.Type,
-		m.Quantity,
-		m.ReferenceID,
-		m.ReferenceType,
-		m.Reason,
+		productID,
+		warehousePlaceID,
+		purchaseItemID,
 	)
 
-	return err
-}
+	var s model.Stock
+	s.Product.ID = productID
+	s.WarehousePlace.ID = warehousePlaceID
+	s.PurchaseItem.ID = purchaseItemID
 
-func (d *StockDAO) AddStock(m *model.StockMovement) error {
+	err := row.Scan(
+		&s.ID,
+		&s.Quantity,
+		&s.Active,
+		&s.UpdatedAt,
+	)
 
-	tx, err := d.db.Begin()
 	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	if err := d.InsertMovementTx(tx, m); err != nil {
-		return err
+		return nil, err
 	}
 
-	stock := &model.Stock{
-		ProductID:        m.ProductID,
-		WarehousePlaceID: m.WarehousePlaceID,
-		Quantity:         m.Quantity,
-		Active:           true,
-	}
-
-	if err := d.UpsertTx(tx, stock); err != nil {
-		return err
-	}
-
-	return tx.Commit()
-}
-
-func (d *StockDAO) UpsertTx(tx *sql.Tx, stock *model.Stock) error {
-
-	query := `
-	INSERT INTO stock (product_id, warehouse_place_id, quantity, active)
-	VALUES (?, ?, ?, ?)
-	ON DUPLICATE KEY UPDATE
-	    quantity = quantity + VALUES(quantity),
-	    active = VALUES(active)
-	`
-
-	_, err := tx.Exec(
-		query,
-		stock.ProductID,
-		stock.WarehousePlaceID,
-		stock.Quantity,
-		stock.Active,
-	)
-
-	return err
-}
-
-func (d *StockDAO) InsertMovementTx(tx *sql.Tx, m *model.StockMovement) error {
-
-	query := `
-	INSERT INTO stock_movement
-	(product_id, warehouse_place_id, type, quantity, reference_id, reference_type, reason)
-	VALUES (?, ?, ?, ?, ?, ?, ?)
-	`
-
-	_, err := tx.Exec(
-		query,
-		m.ProductID,
-		m.WarehousePlaceID,
-		m.Type,
-		m.Quantity,
-		m.ReferenceID,
-		m.ReferenceType,
-		m.Reason,
-	)
-
-	return err
+	return &s, nil
 }
 
 func (d *StockDAO) GetByProduct(productID int64) ([]model.Stock, error) {
 
 	query := `
-	SELECT id, product_id, warehouse_place_id, quantity, active, updated_at
+	SELECT
+		id,
+		product_id,
+		warehouse_place_id,
+		purchase_item_id,
+		quantity,
+		active,
+		updated_at
 	FROM stock
 	WHERE product_id = ?
 	`
@@ -193,12 +177,14 @@ func (d *StockDAO) GetByProduct(productID int64) ([]model.Stock, error) {
 	var list []model.Stock
 
 	for rows.Next() {
+
 		var s model.Stock
 
 		err := rows.Scan(
 			&s.ID,
-			&s.ProductID,
-			&s.WarehousePlaceID,
+			&s.Product.ID,
+			&s.WarehousePlace.ID,
+			&s.PurchaseItem.ID,
 			&s.Quantity,
 			&s.Active,
 			&s.UpdatedAt,
@@ -213,11 +199,32 @@ func (d *StockDAO) GetByProduct(productID int64) ([]model.Stock, error) {
 	return list, nil
 }
 
-func (d *StockDAO) GetAll() ([]model.Stock, error) {
+func (d *StockDAO) Deactivate(id int64) error {
 
 	query := `
-	SELECT id, product_id, warehouse_place_id, quantity, active, updated_at
+	UPDATE stock
+	SET active = false
+	WHERE id = ?
+	`
+
+	_, err := d.db.Exec(query, id)
+
+	return err
+}
+
+func (d *StockDAO) GetAllActive() ([]model.Stock, error) {
+
+	query := `
+	SELECT
+		id,
+		product_id,
+		warehouse_place_id,
+		purchase_item_id,
+		quantity,
+		active,
+		updated_at
 	FROM stock
+	WHERE active = true
 	ORDER BY product_id, warehouse_place_id
 	`
 
@@ -230,12 +237,14 @@ func (d *StockDAO) GetAll() ([]model.Stock, error) {
 	var list []model.Stock
 
 	for rows.Next() {
+
 		var s model.Stock
 
 		err := rows.Scan(
 			&s.ID,
-			&s.ProductID,
-			&s.WarehousePlaceID,
+			&s.Product.ID,
+			&s.WarehousePlace.ID,
+			&s.PurchaseItem.ID,
 			&s.Quantity,
 			&s.Active,
 			&s.UpdatedAt,
@@ -254,18 +263,138 @@ func (d *StockDAO) GetAll() ([]model.Stock, error) {
 	return list, nil
 }
 
-func (d *StockDAO) GetMovementsByProduct(productID int64) ([]model.StockMovement, error) {
+func (d *StockDAO) GetGroupedByProductAndWarehouse() ([]model.Stock, error) {
 
 	query := `
-	SELECT 
-	    product_id,
-	    warehouse_place_id,
-	    type,
-	    quantity,
-	    reference_id,
-	    reference_type,
-	    reason,
-	    created_at
+	SELECT
+		product_id,
+		warehouse_place_id,
+		SUM(quantity) as quantity
+	FROM stock
+	WHERE active = true
+	GROUP BY product_id, warehouse_place_id
+	ORDER BY product_id, warehouse_place_id
+	`
+
+	rows, err := d.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var list []model.Stock
+
+	for rows.Next() {
+
+		var s model.Stock
+
+		err := rows.Scan(
+			&s.Product.ID,
+			&s.WarehousePlace.ID,
+			&s.Quantity,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		s.Active = true
+
+		list = append(list, s)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
+func (d *StockMovementDAO) Create(m *model.StockMovement) error {
+
+	query := `
+	INSERT INTO stock_movement (
+		product_id,
+		warehouse_place_id,
+		purchase_item_id,
+		type,
+		quantity,
+		reference_id,
+		reference_type,
+		reason
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`
+
+	_, err := d.db.Exec(
+		query,
+		m.ProductID,
+		m.WarehousePlaceID,
+		m.PurchseItemID,
+		m.Type,
+		m.Quantity,
+		m.ReferenceID,
+		m.ReferenceType,
+		m.Reason,
+	)
+
+	return err
+}
+
+func (d *StockMovementDAO) GetByID(id int64) (*model.StockMovement, error) {
+
+	query := `
+	SELECT
+		id,
+		product_id,
+		warehouse_place_id,
+		purchase_item_id,
+		type,
+		quantity,
+		reference_id,
+		reference_type,
+		reason,
+		created_at
+	FROM stock_movement
+	WHERE id = ?
+	`
+
+	row := d.db.QueryRow(query, id)
+
+	var m model.StockMovement
+
+	err := row.Scan(
+		&m.ID,
+		&m.ProductID,
+		&m.WarehousePlaceID,
+		&m.PurchseItemID,
+		&m.Type,
+		&m.Quantity,
+		&m.ReferenceID,
+		&m.ReferenceType,
+		&m.Reason,
+		&m.CreatedAt,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &m, nil
+}
+
+func (d *StockMovementDAO) GetByProduct(productID int64) ([]model.StockMovement, error) {
+
+	query := `
+	SELECT
+		id,
+		product_id,
+		warehouse_place_id,
+		purchase_item_id,
+		type,
+		quantity,
+		reference_id,
+		reference_type,
+		reason,
+		created_at
 	FROM stock_movement
 	WHERE product_id = ?
 	ORDER BY created_at DESC
@@ -280,11 +409,14 @@ func (d *StockDAO) GetMovementsByProduct(productID int64) ([]model.StockMovement
 	var list []model.StockMovement
 
 	for rows.Next() {
+
 		var m model.StockMovement
 
 		err := rows.Scan(
+			&m.ID,
 			&m.ProductID,
 			&m.WarehousePlaceID,
+			&m.PurchseItemID,
 			&m.Type,
 			&m.Quantity,
 			&m.ReferenceID,
@@ -299,78 +431,28 @@ func (d *StockDAO) GetMovementsByProduct(productID int64) ([]model.StockMovement
 		list = append(list, m)
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
 	return list, nil
 }
 
-func (d *StockDAO) GetAllMovements() ([]model.StockMovement, error) {
+func (d *StockMovementDAO) GetByProductAndWarehouse(
+	productID,
+	warehousePlaceID int64,
+) ([]model.StockMovement, error) {
 
 	query := `
-	SELECT 
-	    product_id,
-	    warehouse_place_id,
-	    type,
-	    quantity,
-	    reference_id,
-	    reference_type,
-	    reason,
-	    created_at
+	SELECT
+		id,
+		product_id,
+		warehouse_place_id,
+		purchase_item_id,
+		type,
+		quantity,
+		reference_id,
+		reference_type,
+		reason,
+		created_at
 	FROM stock_movement
-	ORDER BY created_at DESC
-	`
-
-	rows, err := d.db.Query(query)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var list []model.StockMovement
-
-	for rows.Next() {
-		var m model.StockMovement
-
-		err := rows.Scan(
-			&m.ProductID,
-			&m.WarehousePlaceID,
-			&m.Type,
-			&m.Quantity,
-			&m.ReferenceID,
-			&m.ReferenceType,
-			&m.Reason,
-			&m.CreatedAt,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		list = append(list, m)
-	}
-
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-
-	return list, nil
-}
-
-func (d *StockDAO) GetMovementsByProductAndWarehouse(productID, warehousePlaceID int64) ([]model.StockMovement, error) {
-
-	query := `
-	SELECT 
-	    product_id,
-	    warehouse_place_id,
-	    type,
-	    quantity,
-	    reference_id,
-	    reference_type,
-	    reason,
-	    created_at
-	FROM stock_movement
-	WHERE product_id = ? 
+	WHERE product_id = ?
 	  AND warehouse_place_id = ?
 	ORDER BY created_at DESC
 	`
@@ -384,11 +466,119 @@ func (d *StockDAO) GetMovementsByProductAndWarehouse(productID, warehousePlaceID
 	var list []model.StockMovement
 
 	for rows.Next() {
+
 		var m model.StockMovement
 
 		err := rows.Scan(
+			&m.ID,
 			&m.ProductID,
 			&m.WarehousePlaceID,
+			&m.PurchseItemID,
+			&m.Type,
+			&m.Quantity,
+			&m.ReferenceID,
+			&m.ReferenceType,
+			&m.Reason,
+			&m.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		list = append(list, m)
+	}
+
+	return list, nil
+}
+
+func (d *StockMovementDAO) GetAll() ([]model.StockMovement, error) {
+
+	query := `
+	SELECT
+		id,
+		product_id,
+		warehouse_place_id,
+		purchase_item_id,
+		type,
+		quantity,
+		reference_id,
+		reference_type,
+		reason,
+		created_at
+	FROM stock_movement
+	ORDER BY created_at DESC
+	`
+
+	rows, err := d.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var list []model.StockMovement
+
+	for rows.Next() {
+
+		var m model.StockMovement
+
+		err := rows.Scan(
+			&m.ID,
+			&m.ProductID,
+			&m.WarehousePlaceID,
+			&m.PurchseItemID,
+			&m.Type,
+			&m.Quantity,
+			&m.ReferenceID,
+			&m.ReferenceType,
+			&m.Reason,
+			&m.CreatedAt,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		list = append(list, m)
+	}
+
+	return list, nil
+}
+
+func (d *StockMovementDAO) GetByReference(referenceID int64) ([]model.StockMovement, error) {
+
+	query := `
+	SELECT
+		id,
+		product_id,
+		warehouse_place_id,
+		purchase_item_id,
+		type,
+		quantity,
+		reference_id,
+		reference_type,
+		reason,
+		created_at
+	FROM stock_movement
+	WHERE reference_id = ?
+	ORDER BY created_at DESC
+	`
+
+	rows, err := d.db.Query(query, referenceID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var list []model.StockMovement
+
+	for rows.Next() {
+
+		var m model.StockMovement
+
+		err := rows.Scan(
+			&m.ID,
+			&m.ProductID,
+			&m.WarehousePlaceID,
+			&m.PurchseItemID,
 			&m.Type,
 			&m.Quantity,
 			&m.ReferenceID,

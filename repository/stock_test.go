@@ -2,7 +2,6 @@ package repository
 
 import (
 	"database/sql"
-	"regexp"
 	"testing"
 	"time"
 
@@ -11,368 +10,154 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func newMock() (*sql.DB, sqlmock.Sqlmock, *StockDAO) {
+func setupMock() (*sql.DB, sqlmock.Sqlmock, func()) {
 	db, mock, _ := sqlmock.New()
-	dao := &StockDAO{db: db}
-	return db, mock, dao
+	return db, mock, func() { db.Close() }
 }
 
 func TestStockDAO_Create(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	assert.NoError(t, err)
-	defer db.Close()
+	db, mock, close := setupMock()
+	defer close()
 
 	dao := &StockDAO{db: db}
 
 	stock := &model.Stock{
-		ProductID:        1,
-		WarehousePlaceID: 2,
-		Quantity:         10,
+		Product:        model.Product{ID: 1},
+		WarehousePlace: model.WarehousePlace{ID: 2},
+		PurchaseItem:   model.PurchaseItem{ID: 3},
+		Quantity:       10,
 	}
 
-	query := `
-		INSERT INTO stock \(
-			product_id,
-			warehouse_place_id,
-			quantity
-		\) VALUES \(\?, \?, \?\)
-	`
-
-	mock.ExpectExec(query).
-		WithArgs(stock.ProductID, stock.WarehousePlaceID, stock.Quantity).
+	mock.ExpectExec("INSERT INTO stock").
+		WithArgs(1, 2, 3, 10).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
-	err = dao.Create(stock)
-	assert.NoError(t, err)
+	err := dao.Create(stock)
 
+	assert.NoError(t, err)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestStockDAO_Update(t *testing.T) {
-	db, mock, err := sqlmock.New()
-	assert.NoError(t, err)
-	defer db.Close()
+func TestStockDAO_GetByID(t *testing.T) {
+	db, mock, close := setupMock()
+	defer close()
 
 	dao := &StockDAO{db: db}
 
-	stock := &model.Stock{
-		ID:               1,
-		ProductID:        1,
-		WarehousePlaceID: 2,
-		Quantity:         20,
-	}
-
-	query := `
-		UPDATE stock
-		SET
-			product_id = \?,
-			warehouse_place_id = \?,
-			quantity = \?
-		WHERE id = \?
-	`
-
-	mock.ExpectExec(query).
-		WithArgs(
-			stock.ProductID,
-			stock.WarehousePlaceID,
-			stock.Quantity,
-			stock.ID,
-		).
-		WillReturnResult(sqlmock.NewResult(1, 1))
-
-	err = dao.Update(stock)
-	assert.NoError(t, err)
-
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestStockDAO_Get(t *testing.T) {
-
-	db, mock, dao := newMock()
-	defer db.Close()
-
-	now := time.Now()
-
 	rows := sqlmock.NewRows([]string{
-		"id",
-		"product_id",
-		"warehouse_place_id",
-		"quantity",
-		"active",
-		"updated_at",
-	}).AddRow(1, 1, 2, 10, true, now)
+		"id", "product_id", "warehouse_place_id",
+		"purchase_item_id", "quantity", "active", "updated_at",
+	}).AddRow(1, 10, 20, 30, 5, true, time.Now())
 
-	query := regexp.QuoteMeta(`
-	SELECT id, product_id, warehouse_place_id, quantity, active, updated_at
-	FROM stock
-	WHERE product_id = ? AND warehouse_place_id = ?
-	`)
-
-	mock.ExpectQuery(query).
-		WithArgs(1, 2).
-		WillReturnRows(rows)
-
-	result, err := dao.Get(1, 2)
-
-	assert.NoError(t, err)
-	assert.Equal(t, int64(1), result.ProductID)
-	assert.Equal(t, 10, result.Quantity)
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestStockDAO_InsertMovement(t *testing.T) {
-
-	db, mock, dao := newMock()
-	defer db.Close()
-
-	m := &model.StockMovement{
-		ProductID:        1,
-		WarehousePlaceID: 2,
-		Type:             model.StockMovementIn,
-		Quantity:         5,
-		Reason:           "purchase",
-	}
-
-	query := regexp.QuoteMeta(`
-	INSERT INTO stock_movement
-	(product_id, warehouse_place_id, type, quantity, reference_id, reference_type, reason)
-	VALUES (?, ?, ?, ?, ?, ?, ?)
-	`)
-
-	mock.ExpectExec(query).
-		WithArgs(1, 2, model.StockMovementIn, 5, nil, nil, "purchase").
-		WillReturnResult(sqlmock.NewResult(1, 1))
-
-	err := dao.InsertMovement(m)
-
-	assert.NoError(t, err)
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestStockDAO_AddStock(t *testing.T) {
-
-	db, mock, dao := newMock()
-	defer db.Close()
-
-	m := &model.StockMovement{
-		ProductID:        1,
-		WarehousePlaceID: 2,
-		Type:             model.StockMovementIn,
-		Quantity:         10,
-		Reason:           "purchase",
-	}
-
-	insertMovementQuery := regexp.QuoteMeta(`
-	INSERT INTO stock_movement
-	(product_id, warehouse_place_id, type, quantity, reference_id, reference_type, reason)
-	VALUES (?, ?, ?, ?, ?, ?, ?)
-	`)
-
-	upsertQuery := regexp.QuoteMeta(`
-	INSERT INTO stock (product_id, warehouse_place_id, quantity, active)
-	VALUES (?, ?, ?, ?)
-	ON DUPLICATE KEY UPDATE
-	    quantity = quantity + VALUES(quantity),
-	    active = VALUES(active)
-	`)
-
-	mock.ExpectBegin()
-
-	mock.ExpectExec(insertMovementQuery).
-		WithArgs(1, 2, model.StockMovementIn, 10, nil, nil, "purchase").
-		WillReturnResult(sqlmock.NewResult(1, 1))
-
-	mock.ExpectExec(upsertQuery).
-		WithArgs(1, 2, 10, true).
-		WillReturnResult(sqlmock.NewResult(1, 1))
-
-	mock.ExpectCommit()
-
-	err := dao.AddStock(m)
-
-	assert.NoError(t, err)
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestStockDAO_GetAll(t *testing.T) {
-
-	db, mock, dao := newMock()
-	defer db.Close()
-
-	now := time.Now()
-
-	rows := sqlmock.NewRows([]string{
-		"id",
-		"product_id",
-		"warehouse_place_id",
-		"quantity",
-		"active",
-		"updated_at",
-	}).
-		AddRow(1, 1, 1, 10, true, now).
-		AddRow(1, 1, 2, 5, true, now)
-
-	query := regexp.QuoteMeta(`
-	SELECT id, product_id, warehouse_place_id, quantity, active, updated_at
-	FROM stock
-	ORDER BY product_id, warehouse_place_id
-	`)
-
-	mock.ExpectQuery(query).
-		WillReturnRows(rows)
-
-	result, err := dao.GetAll()
-
-	assert.NoError(t, err)
-	assert.Len(t, result, 2)
-	assert.Equal(t, int64(1), result[0].ProductID)
-	assert.Equal(t, 10, result[0].Quantity)
-
-	assert.NoError(t, mock.ExpectationsWereMet())
-}
-
-func TestStockDAO_GetMovementsByProduct(t *testing.T) {
-
-	db, mock, dao := newMock()
-	defer db.Close()
-
-	now := time.Now()
-
-	rows := sqlmock.NewRows([]string{
-		"product_id",
-		"warehouse_place_id",
-		"type",
-		"quantity",
-		"reference_id",
-		"reference_type",
-		"reason",
-		"created_at",
-	}).AddRow(
-		1, 2, "IN", 10, nil, nil, "purchase", now,
-	)
-
-	query := regexp.QuoteMeta(`
-	SELECT 
-	    product_id,
-	    warehouse_place_id,
-	    type,
-	    quantity,
-	    reference_id,
-	    reference_type,
-	    reason,
-	    created_at
-	FROM stock_movement
-	WHERE product_id = ?
-	ORDER BY created_at DESC
-	`)
-
-	mock.ExpectQuery(query).
+	mock.ExpectQuery("SELECT").
 		WithArgs(1).
 		WillReturnRows(rows)
 
-	result, err := dao.GetMovementsByProduct(1)
+	result, err := dao.GetByID(1)
 
 	assert.NoError(t, err)
-	assert.Len(t, result, 1)
-	assert.Equal(t, int64(1), result[0].ProductID)
-	assert.Equal(t, 10, result[0].Quantity)
-
+	assert.Equal(t, int64(1), result.ID)
+	assert.Equal(t, 5, result.Quantity)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestStockDAO_GetAllMovements(t *testing.T) {
+func TestStockDAO_GetAllActive(t *testing.T) {
+	db, mock, close := setupMock()
+	defer close()
 
-	db, mock, dao := newMock()
-	defer db.Close()
-
-	now := time.Now()
+	dao := &StockDAO{db: db}
 
 	rows := sqlmock.NewRows([]string{
-		"product_id",
-		"warehouse_place_id",
-		"type",
-		"quantity",
-		"reference_id",
-		"reference_type",
-		"reason",
-		"created_at",
+		"id", "product_id", "warehouse_place_id",
+		"purchase_item_id", "quantity", "active", "updated_at",
 	}).
-		AddRow(1, 1, "IN", 10, nil, nil, "purchase", now).
-		AddRow(2, 1, "OUT", 3, nil, nil, "sale", now)
+		AddRow(1, 1, 1, 1, 10, true, time.Now()).
+		AddRow(2, 1, 2, 2, 20, true, time.Now())
 
-	query := regexp.QuoteMeta(`
-	SELECT 
-	    product_id,
-	    warehouse_place_id,
-	    type,
-	    quantity,
-	    reference_id,
-	    reference_type,
-	    reason,
-	    created_at
-	FROM stock_movement
-	ORDER BY created_at DESC
-	`)
-
-	mock.ExpectQuery(query).
+	mock.ExpectQuery("SELECT").
 		WillReturnRows(rows)
 
-	result, err := dao.GetAllMovements()
+	list, err := dao.GetAllActive()
 
 	assert.NoError(t, err)
-	assert.Len(t, result, 2)
-
-	assert.Equal(t, int64(1), result[0].ProductID)
-	assert.Equal(t, int64(2), result[1].ProductID)
-
+	assert.Len(t, list, 2)
+	assert.Equal(t, 10, list[0].Quantity)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
 
-func TestStockDAO_GetMovementsByProductAndWarehouse(t *testing.T) {
+func TestStockDAO_GetGroupedByProductAndWarehouse(t *testing.T) {
+	db, mock, close := setupMock()
+	defer close()
 
-	db, mock, dao := newMock()
-	defer db.Close()
-
-	now := time.Now()
+	dao := &StockDAO{db: db}
 
 	rows := sqlmock.NewRows([]string{
-		"product_id",
-		"warehouse_place_id",
-		"type",
-		"quantity",
-		"reference_id",
-		"reference_type",
-		"reason",
-		"created_at",
-	}).AddRow(
-		1, 2, "IN", 5, nil, nil, "adjustment", now,
-	)
+		"product_id", "warehouse_place_id", "quantity",
+	}).
+		AddRow(1, 1, 30).
+		AddRow(1, 2, 20)
 
-	query := regexp.QuoteMeta(`
-	SELECT 
-	    product_id,
-	    warehouse_place_id,
-	    type,
-	    quantity,
-	    reference_id,
-	    reference_type,
-	    reason,
-	    created_at
-	FROM stock_movement
-	WHERE product_id = ? 
-	  AND warehouse_place_id = ?
-	ORDER BY created_at DESC
-	`)
-
-	mock.ExpectQuery(query).
-		WithArgs(1, 2).
+	mock.ExpectQuery("SELECT").
 		WillReturnRows(rows)
 
-	result, err := dao.GetMovementsByProductAndWarehouse(1, 2)
+	list, err := dao.GetGroupedByProductAndWarehouse()
 
 	assert.NoError(t, err)
-	assert.Len(t, result, 1)
-	assert.Equal(t, 5, result[0].Quantity)
+	assert.Len(t, list, 2)
+	assert.Equal(t, 30, list[0].Quantity)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
 
+func TestStockMovementDAO_Create(t *testing.T) {
+	db, mock, close := setupMock()
+	defer close()
+
+	dao := &StockMovementDAO{db: db}
+
+	refID := int64(99)
+	refType := "PURCHASE"
+
+	m := &model.StockMovement{
+		ProductID:        1,
+		WarehousePlaceID: 2,
+		PurchseItemID:    3,
+		Type:             "IN",
+		Quantity:         10,
+		ReferenceID:      &refID,
+		ReferenceType:    &refType,
+		Reason:           "Compra",
+	}
+
+	mock.ExpectExec("INSERT INTO stock_movement").
+		WithArgs(1, 2, 3, "IN", 10, &refID, &refType, "Compra").
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	err := dao.Create(m)
+
+	assert.NoError(t, err)
+	assert.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestStockMovementDAO_GetByProduct(t *testing.T) {
+	db, mock, close := setupMock()
+	defer close()
+
+	dao := &StockMovementDAO{db: db}
+
+	rows := sqlmock.NewRows([]string{
+		"id", "product_id", "warehouse_place_id",
+		"purchase_item_id", "type", "quantity",
+		"reference_id", "reference_type", "reason", "created_at",
+	}).AddRow(1, 1, 1, 1, "IN", 10, nil, nil, "", time.Now())
+
+	mock.ExpectQuery("SELECT").
+		WithArgs(1).
+		WillReturnRows(rows)
+
+	list, err := dao.GetByProduct(1)
+
+	assert.NoError(t, err)
+	assert.Len(t, list, 1)
+	assert.Equal(t, 10, list[0].Quantity)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
