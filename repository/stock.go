@@ -272,7 +272,8 @@ func (d *StockDAO) GetGroupedByProductAndWarehouse() ([]model.Stock, error) {
 		SUM(quantity) as quantity
 	FROM stock
 	WHERE active = true
-	GROUP BY product_id, warehouse_place_id
+	GROUP BY product_id, warehouse_place_id 
+	HAVING quantity > 0 
 	ORDER BY product_id, warehouse_place_id
 	`
 

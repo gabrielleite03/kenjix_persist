@@ -31,7 +31,3 @@ FOREIGN KEY (product_id) REFERENCES product(id);
 ALTER TABLE stock 
 ADD CONSTRAINT fk_stock_place
 FOREIGN KEY (warehouse_place_id) REFERENCES warehouse_place(id);
-
-ALTER TABLE stock 
-ADD CONSTRAINT fk_stock_purchase_item
-FOREIGN KEY (purchase_item_id) REFERENCES purchase_item(id);

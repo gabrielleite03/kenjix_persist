@@ -252,3 +252,44 @@ func (d *PurchaseDAO) Update(p *model.Purchase) error {
 
 	return tx.Commit()
 }
+
+func (dao *PurchaseDAO) GetPurchaseItemByID(id int64) (*model.PurchaseItem, error) {
+	query := `
+		SELECT 
+			id,
+			purchase_id,
+			product_id,
+			quantity,
+			cost_price,
+			total,
+			cost_center_id
+		FROM purchase_item
+		WHERE id = ?
+	`
+
+	var item model.PurchaseItem
+	var costCenterID sql.NullInt64
+
+	err := dao.db.QueryRow(query, id).Scan(
+		&item.ID,
+		&item.PurchaseID,
+		&item.ProductID,
+		&item.Quantity,
+		&item.CostPrice,
+		&item.Total,
+		&costCenterID,
+	)
+
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+
+	if costCenterID.Valid {
+		item.CostCenterID = &costCenterID.Int64
+	}
+
+	return &item, nil
+}
