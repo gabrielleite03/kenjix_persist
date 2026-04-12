@@ -9,6 +9,16 @@ INSERT INTO marketplace (
     updated_at
 ) VALUES
 (
+    'Site',
+    'https://grandesnomesdapropaganda.com.br/wp-content/uploads/2021/04/Mercado-Livre.jpg',
+    'active',
+    10.0,
+    'api',
+    'https://api.mercadolibre.com',
+    NOW(),
+    NOW()
+),
+(
     'Mercado Livre',
     'https://grandesnomesdapropaganda.com.br/wp-content/uploads/2021/04/Mercado-Livre.jpg',
     'active',

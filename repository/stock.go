@@ -310,6 +310,51 @@ func (d *StockDAO) GetGroupedByProductAndWarehouse() ([]model.Stock, error) {
 	return list, nil
 }
 
+func (d *StockDAO) GetGroupedByProduct() ([]model.Stock, error) {
+
+	query := `
+	SELECT
+		product_id,
+		SUM(quantity) as quantity
+	FROM stock
+	WHERE active = true
+	GROUP BY product_id
+	HAVING quantity > 0
+	ORDER BY product_id
+	`
+
+	rows, err := d.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var list []model.Stock
+
+	for rows.Next() {
+
+		var s model.Stock
+
+		err := rows.Scan(
+			&s.Product.ID,
+			&s.Quantity,
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		s.Active = true
+
+		list = append(list, s)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}
+
 func (d *StockMovementDAO) Create(m *model.StockMovement) error {
 
 	query := `
