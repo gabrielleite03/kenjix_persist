@@ -1,14 +1,50 @@
 INSERT INTO marketplace (
-    id, name, logo, comission_rate, integration_type, api_endpoint, active
+    name,
+    logo,
+    status,
+    commission_rate,
+    integration_type,
+    api_endpoint,
+    created_at,
+    updated_at
 ) VALUES
-(1, 'Mercado Livre', 
+(
+    'Mercado Livre',
     'https://grandesnomesdapropaganda.com.br/wp-content/uploads/2021/04/Mercado-Livre.jpg',
-    16, 'api', 'https://api.mercadolibre.com', 1
+    'active',
+    0.16,
+    'api',
+    'https://api.mercadolibre.com',
+    NOW(),
+    NOW()
 ),
-(2, 'Shopee',
+(
+    'Shopee',
     'https://logodownload.org/wp-content/uploads/2021/03/shopee-logo-0.png',
-    18, 'api', 'https://partner.shopeemobile.com/api/v2', 1
+    'active',
+    0.18,
+    'api',
+    'https://partner.shopeemobile.com/api/v2',
+    NOW(),
+    NOW()
 ),
-(3, 'Amazon',
+(
+    'Amazon',
     'https://logodownload.org/wp-content/uploads/2014/04/amazon-logo-0.png',
-    15, 'manual', NULL, 0
+    'inactive',
+    0.15,
+    'manual',
+    NULL,
+    NOW(),
+    NOW()
+),
+(
+    'PDV',
+    'https://logodownload.org/wp-content/uploads/2021/03/shopee-logo-0.png',
+    'active',
+    0.10,
+    'api',
+    'https://partner.shopeemobile.com/api/v2',
+    NOW(),
+    NOW()
+);

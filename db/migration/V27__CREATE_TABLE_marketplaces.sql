@@ -1,12 +1,21 @@
 CREATE TABLE marketplace (
-    id BIGINT NOT NULL AUTO_INCREMENT,
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    logo VARCHAR(500),
-    comission_rate DECIMAL(10,2) NOT NULL DEFAULT 0.0,
-    integration_type VARCHAR(100),
-    api_key VARCHAR(255),
-    api_secret VARCHAR(255),
-    api_endpoint VARCHAR(500),
-    active BOOLEAN NOT NULL DEFAULT TRUE,
-    PRIMARY KEY (id)
-);
+    logo TEXT NULL,
+
+    status VARCHAR(20) NOT NULL,
+    commission_rate DECIMAL(10,4) NOT NULL,
+    integration_type VARCHAR(20) NOT NULL,
+
+    api_url TEXT NULL,
+    api_key TEXT NULL,
+    api_secret TEXT NULL,
+    api_endpoint TEXT NULL,
+
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at DATETIME NULL,
+
+    INDEX idx_marketplace_status (status),
+    INDEX idx_marketplace_deleted_at (deleted_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
