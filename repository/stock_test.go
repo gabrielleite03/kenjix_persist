@@ -161,3 +161,59 @@ func TestStockMovementDAO_GetByProduct(t *testing.T) {
 	assert.Equal(t, 10, list[0].Quantity)
 	assert.NoError(t, mock.ExpectationsWereMet())
 }
+
+func TestFindAllEager(t *testing.T) {
+
+	db, mock, err := sqlmock.New()
+	assert.NoError(t, err)
+	defer db.Close()
+
+	dao := &StockMovementDAO{db: db}
+	now := time.Now()
+
+	rows := sqlmock.NewRows([]string{
+		"id", "type", "quantity", "reference_id", "reference_type", "reason", "created_at",
+
+		"id", "name", "sku", "price", "marca", "description", "active", "volume", "category_id",
+
+		"id", "name", "active", "warehouse_place_type_id", "warehouse_id", "capacity",
+
+		"id", "purchase_id", "product_id", "quantity", "cost_price", "total", "cost_center_id",
+	}).AddRow(
+		1, "IN", 10, nil, nil, "entrada", now,
+
+		// product
+		100, "Produto A", "SKU123", "10.50", "MarcaX", "Desc", true, "1.5", nil,
+
+		// warehouse_place
+		200, "Prateleira 1", true, nil, nil, nil,
+
+		// purchase_item
+		300, 400, 100, "10", "5.00", "50.00", nil,
+	)
+
+	mock.ExpectQuery("SELECT (.+) FROM stock_movement").
+		WillReturnRows(rows)
+
+	result, err := dao.FindAllEager()
+
+	assert.NoError(t, err)
+	assert.Len(t, result, 1)
+
+	sm := result[0]
+
+	assert.Equal(t, int64(1), sm.ID)
+	assert.Equal(t, model.StockMovementType("IN"), sm.Type)
+	assert.Equal(t, 10, sm.Quantity)
+
+	assert.Equal(t, int64(100), sm.Product.ID)
+	assert.Equal(t, "Produto A", sm.Product.Name)
+
+	assert.Equal(t, int64(200), sm.WarehousePlace.ID)
+	assert.Equal(t, "Prateleira 1", sm.WarehousePlace.Name)
+
+	assert.Equal(t, int64(300), sm.PurchaseItem.ID)
+	assert.Equal(t, int64(400), sm.PurchaseItem.PurchaseID)
+
+	assert.NoError(t, mock.ExpectationsWereMet())
+}

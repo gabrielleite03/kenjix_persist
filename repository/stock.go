@@ -641,3 +641,125 @@ func (d *StockMovementDAO) GetByReference(referenceID int64) ([]model.StockMovem
 
 	return list, nil
 }
+
+func (d *StockMovementDAO) FindAllEager() ([]model.StockMovementEager, error) {
+
+	query := `
+	SELECT 
+		sm.id,
+		sm.type,
+		sm.quantity,
+		sm.reference_id,
+		sm.reference_type,
+		sm.reason,
+		sm.created_at,
+
+		-- PRODUCT
+		p.id,
+		p.name,
+		p.sku,
+		p.price,
+		p.marca,
+		p.description,
+		p.active,
+		p.volume,
+		p.category_id,
+
+		-- WAREHOUSE PLACE
+		wp.id,
+		wp.name,
+		wp.active,
+		wp.warehouse_place_type_id,
+		wp.warehouse_id,
+		wp.capacity,
+
+		-- PURCHASE ITEM
+		pi.id,
+		pi.purchase_id,
+		pi.product_id,
+		pi.quantity,
+		pi.cost_price,
+		pi.total,
+		pi.cost_center_id
+
+	FROM stock_movement sm
+	JOIN product p ON p.id = sm.product_id
+	JOIN warehouse_place wp ON wp.id = sm.warehouse_place_id
+	JOIN purchase_item pi ON pi.id = sm.purchase_item_id
+	ORDER BY sm.created_at DESC
+	`
+
+	rows, err := d.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var list []model.StockMovementEager
+
+	for rows.Next() {
+
+		var sm model.StockMovementEager
+
+		var (
+			productCategoryID *int64
+			wpTypeID          *int64
+			wpWarehouseID     *int64
+			wpCapacity        *int64
+			piCostCenterID    *int64
+		)
+
+		err := rows.Scan(
+			&sm.ID,
+			&sm.Type,
+			&sm.Quantity,
+			&sm.ReferenceID,
+			&sm.ReferenceType,
+			&sm.Reason,
+			&sm.CreatedAt,
+
+			&sm.Product.ID,
+			&sm.Product.Name,
+			&sm.Product.SKU,
+			&sm.Product.Price,
+			&sm.Product.Marca,
+			&sm.Product.Description,
+			&sm.Product.Active,
+			&sm.Product.Volume,
+			&productCategoryID,
+
+			&sm.WarehousePlace.ID,
+			&sm.WarehousePlace.Name,
+			&sm.WarehousePlace.Active,
+			&wpTypeID,
+			&wpWarehouseID,
+			&wpCapacity,
+
+			&sm.PurchaseItem.ID,
+			&sm.PurchaseItem.PurchaseID,
+			&sm.PurchaseItem.ProductID,
+			&sm.PurchaseItem.Quantity,
+			&sm.PurchaseItem.CostPrice,
+			&sm.PurchaseItem.Total,
+			&piCostCenterID,
+		)
+
+		if err != nil {
+			return nil, err
+		}
+
+		sm.Product.CategoryID = productCategoryID
+		sm.WarehousePlace.WarehousePlaceTypeID = wpTypeID
+		sm.WarehousePlace.WarehouseID = wpWarehouseID
+		sm.WarehousePlace.Capacity = wpCapacity
+		sm.PurchaseItem.CostCenterID = piCostCenterID
+
+		list = append(list, sm)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return list, nil
+}

@@ -1,33 +1,35 @@
-# Use the official Golang image as a base image
-FROM golang:1.20-alpine AS builder
+# ---------- BUILD STAGE ----------
+FROM golang:1.22-alpine AS builder
 
-# Set the working directory inside the container
+# Instala dependências necessárias
+RUN apk add --no-cache git
+
 WORKDIR /app
 
-# Cache modules (copy only go.mod and go.sum)
+# Copia go.mod e go.sum primeiro (cache eficiente)
 COPY go.mod go.sum ./
-RUN apk add --no-cache git ca-certificates && \
-    go env -w GOPROXY=https://proxy.golang.org && \
-    go mod download
+RUN go mod download
 
-# Copy the source code
+# Copia o restante do código
 COPY . .
 
-# Build the Go application
-RUN go build -o main ./cmd/api
+# Build da aplicação (binário estático)
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o app
 
-# Use a minimal base image for the final container
-FROM alpine:3.18
+# ---------- RUNTIME STAGE ----------
+FROM alpine:3.19
 
-# Set the working directory inside the container
-WORKDIR /root/
+WORKDIR /app
 
-# Copy the built binary from the builder stage
-COPY --from=builder /app/main .
+# Certificados SSL (necessário pra AWS, HTTPS, etc)
+RUN apk add --no-cache ca-certificates
 
-# Expose the application port
+# Copia o binário do stage anterior
+COPY --from=builder /app/app .
+
+# Porta padrão (ajuste se necessário)
 EXPOSE 8080
 
-# Command to run the application
-CMD ["./main"]
+# Comando de execução
+CMD ["./app"]
 
