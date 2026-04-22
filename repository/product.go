@@ -32,8 +32,8 @@ func (d *productDAO) Create(p *model.Product) error {
 
 	query := `
 		INSERT INTO product
-		(name, sku, price, marca, description, category_id, volume)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		(name, sku, price, marca, description, category_id, volume, ncm, ean)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := tx.Exec(
@@ -45,6 +45,8 @@ func (d *productDAO) Create(p *model.Product) error {
 		p.Description,
 		p.CategoryID,
 		p.Volume.String(),
+		p.NCM,
+		p.EAN,
 	)
 	if err != nil {
 		tx.Rollback()
@@ -80,7 +82,7 @@ func (d *productDAO) Update(p *model.Product) error {
 
 	query := `
 		UPDATE product
-		SET name=?, sku=?, price=?, marca=?, description=?, active=?, category_id=?, volume=?
+		SET name=?, sku=?, price=?, marca=?, description=?, active=?, category_id=?, volume=?, ncm=?, ean=?
 		WHERE id=?
 	`
 
@@ -95,6 +97,8 @@ func (d *productDAO) Update(p *model.Product) error {
 		p.CategoryID,
 
 		p.Volume.String(),
+		p.NCM,
+		p.EAN,
 		p.ID,
 	)
 	if err != nil {
@@ -117,7 +121,7 @@ func (d *productDAO) Update(p *model.Product) error {
 
 func (d *productDAO) GetByID(id int64) (*model.Product, error) {
 	query := `
-		SELECT id, name, sku, price, marca, description, active, category_id, volume
+		SELECT id, name, sku, price, marca, description, active, category_id, volume, ncm, ean
 		FROM product WHERE id=?
 	`
 
@@ -135,6 +139,8 @@ func (d *productDAO) GetByID(id int64) (*model.Product, error) {
 		&p.Active,
 		&p.CategoryID,
 		&volume,
+		&p.NCM,
+		&p.EAN,
 	)
 	if err != nil {
 		return nil, err
@@ -163,7 +169,7 @@ func (d *productDAO) Delete(id int64) error {
 
 func (d *productDAO) List() ([]model.Product, error) {
 	rows, err := d.db.Query(`
-		SELECT id, name, sku, price, marca, description, active, category_id, volume
+		SELECT id, name, sku, price, marca, description, active, category_id, volume, ncm, ean
 		FROM product
 	`)
 	if err != nil {
@@ -187,6 +193,8 @@ func (d *productDAO) List() ([]model.Product, error) {
 			&p.Active,
 			&p.CategoryID,
 			&p.Volume,
+			&p.NCM,
+			&p.EAN,
 		)
 
 		p.Price, _ = decimal.NewFromString(price)

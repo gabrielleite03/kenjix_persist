@@ -32,14 +32,16 @@ func TestCreate(t *testing.T) {
 		Price:       price,
 		Marca:       "Marca",
 		Description: "Descricao",
+		NCM:         "3216548",
+		EAN:         "3216548",
 	}
 
 	mock.ExpectBegin()
 
 	mock.ExpectExec(regexp.QuoteMeta(`
 		INSERT INTO product
-		(name, sku, price, marca, description, category_id, volume)
-		VALUES (?, ?, ?, ?, ?, ?, ?)
+		(name, sku, price, marca, description, category_id, volume, ncm, ean)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`)).
 		WithArgs(
 			product.Name,
@@ -49,6 +51,8 @@ func TestCreate(t *testing.T) {
 			product.Description,
 			product.CategoryID,
 			product.Volume.String(),
+			product.NCM,
+			product.EAN,
 		).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
@@ -82,13 +86,15 @@ func TestUpdateExpense(t *testing.T) {
 		Marca:       "Marca",
 		Description: "Desc",
 		Active:      true,
+		NCM:         "3216548",
+		EAN:         "3216548",
 	}
 
 	mock.ExpectBegin()
 
 	mock.ExpectExec(regexp.QuoteMeta(`
 		UPDATE product
-		SET name=?, sku=?, price=?, marca=?, description=?, active=?, category_id=?, volume=?
+		SET name=?, sku=?, price=?, marca=?, description=?, active=?, category_id=?, volume=?, ncm=?, ean=?
 		WHERE id=?
 	`)).
 		WithArgs(
@@ -100,6 +106,8 @@ func TestUpdateExpense(t *testing.T) {
 			product.Active,
 			product.CategoryID,
 			product.Volume.String(),
+			product.NCM,
+			product.EAN,
 			product.ID,
 		).
 		WillReturnResult(sqlmock.NewResult(0, 1))
@@ -133,7 +141,7 @@ func TestGetByID(t *testing.T) {
 	defer db.Close()
 
 	rows := sqlmock.NewRows([]string{
-		"id", "name", "sku", "price", "marca", "description", "active", "category_id", "volume",
+		"id", "name", "sku", "price", "marca", "description", "active", "category_id", "volume", "ncm", "ean",
 	}).AddRow(
 		1,
 		"Produto",
@@ -144,10 +152,12 @@ func TestGetByID(t *testing.T) {
 		true,
 		nil,
 		nil, // volume NULL para testar
+		"",
+		"",
 	)
 
 	mock.ExpectQuery(regexp.QuoteMeta(`
-		SELECT id, name, sku, price, marca, description, active, category_id, volume
+		SELECT id, name, sku, price, marca, description, active, category_id, volume, ncm, ean
 		FROM product WHERE id=?
 	`)).
 		WithArgs(1).
