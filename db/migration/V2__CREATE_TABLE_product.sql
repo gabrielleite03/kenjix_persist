@@ -13,3 +13,8 @@ CREATE TABLE product (
         FOREIGN KEY (category_id)
         REFERENCES category(id)
 ) ENGINE=InnoDB;
+
+
+ALTER TABLE product
+ADD COLUMN ncm VARCHAR(8) NULL,
+ADD COLUMN ean VARCHAR(14) NULL;

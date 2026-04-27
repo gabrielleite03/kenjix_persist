@@ -32,8 +32,8 @@ func TestCreate(t *testing.T) {
 		Price:       price,
 		Marca:       "Marca",
 		Description: "Descricao",
-		NCM:         "3216548",
-		EAN:         "3216548",
+		NCM:         nil,
+		EAN:         nil,
 	}
 
 	mock.ExpectBegin()
@@ -86,8 +86,8 @@ func TestUpdateExpense(t *testing.T) {
 		Marca:       "Marca",
 		Description: "Desc",
 		Active:      true,
-		NCM:         "3216548",
-		EAN:         "3216548",
+		NCM:         nil,
+		EAN:         nil,
 	}
 
 	mock.ExpectBegin()
