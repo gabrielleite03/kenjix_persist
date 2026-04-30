@@ -12,6 +12,7 @@ type ProductDAO interface {
 	Create(product *model.Product) error
 	Update(product *model.Product) error
 	GetByID(id int64) (*model.Product, error)
+	GetBySKU(sku string) (*model.Product, error)
 	Delete(id int64) error
 	List() ([]model.Product, error)
 }
@@ -32,8 +33,8 @@ func (d *productDAO) Create(p *model.Product) error {
 
 	query := `
 		INSERT INTO product
-		(name, sku, price, marca, description, category_id, volume, ncm, ean)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		(name, sku, price, marca, description, category_id, volume, ncm, ean, weight)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := tx.Exec(
@@ -47,6 +48,7 @@ func (d *productDAO) Create(p *model.Product) error {
 		p.Volume.String(),
 		p.NCM,
 		p.EAN,
+		p.Weight,
 	)
 	if err != nil {
 		tx.Rollback()
@@ -82,7 +84,7 @@ func (d *productDAO) Update(p *model.Product) error {
 
 	query := `
 		UPDATE product
-		SET name=?, sku=?, price=?, marca=?, description=?, active=?, category_id=?, volume=?, ncm=?, ean=?
+		SET name=?, sku=?, price=?, marca=?, description=?, active=?, category_id=?, volume=?, ncm=?, ean=?, weight=?
 		WHERE id=?
 	`
 
@@ -99,6 +101,7 @@ func (d *productDAO) Update(p *model.Product) error {
 		p.Volume.String(),
 		p.NCM,
 		p.EAN,
+		p.Weight,
 		p.ID,
 	)
 	if err != nil {
@@ -121,7 +124,7 @@ func (d *productDAO) Update(p *model.Product) error {
 
 func (d *productDAO) GetByID(id int64) (*model.Product, error) {
 	query := `
-		SELECT id, name, sku, price, marca, description, active, category_id, volume, ncm, ean
+		SELECT id, name, sku, price, marca, description, active, category_id, volume, ncm, ean, weight
 		FROM product WHERE id=?
 	`
 
@@ -141,6 +144,7 @@ func (d *productDAO) GetByID(id int64) (*model.Product, error) {
 		&volume,
 		&p.NCM,
 		&p.EAN,
+		&p.Weight,
 	)
 	if err != nil {
 		return nil, err
@@ -162,6 +166,45 @@ func (d *productDAO) GetByID(id int64) (*model.Product, error) {
 	return &p, nil
 }
 
+func (d *productDAO) GetBySKU(sku string) (*model.Product, error) {
+	query := `
+		SELECT id, name, sku, price, marca, description, active, category_id, volume, ncm, ean, weight
+		FROM product WHERE sku=?
+	`
+	var p model.Product
+	var price string
+	var volume sql.NullString
+	err := d.db.QueryRow(query, sku).Scan(
+		&p.ID,
+		&p.Name,
+		&p.SKU,
+		&price,
+		&p.Marca,
+		&p.Description,
+		&p.Active,
+		&p.CategoryID,
+		&volume,
+		&p.NCM,
+		&p.EAN,
+		&p.Weight,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	p.Price, _ = decimal.NewFromString(price)
+
+	if volume.Valid {
+		v, _ := decimal.NewFromString(volume.String)
+		p.Volume = v
+	}
+
+	d.loadProperties(&p)
+	d.loadImages(&p)
+	d.loadVideos(&p)
+	return &p, nil
+}
+
 func (d *productDAO) Delete(id int64) error {
 	_, err := d.db.Exec("DELETE FROM product WHERE id=?", id)
 	return err
@@ -169,7 +212,7 @@ func (d *productDAO) Delete(id int64) error {
 
 func (d *productDAO) List() ([]model.Product, error) {
 	rows, err := d.db.Query(`
-		SELECT id, name, sku, price, marca, description, active, category_id, volume, ncm, ean
+		SELECT id, name, sku, price, marca, description, active, category_id, volume, ncm, ean, weight
 		FROM product
 	`)
 	if err != nil {
@@ -195,6 +238,7 @@ func (d *productDAO) List() ([]model.Product, error) {
 			&p.Volume,
 			&p.NCM,
 			&p.EAN,
+			&p.Weight,
 		)
 
 		p.Price, _ = decimal.NewFromString(price)

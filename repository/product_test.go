@@ -34,14 +34,15 @@ func TestCreate(t *testing.T) {
 		Description: "Descricao",
 		NCM:         nil,
 		EAN:         nil,
+		Weight:      nil,
 	}
 
 	mock.ExpectBegin()
 
 	mock.ExpectExec(regexp.QuoteMeta(`
 		INSERT INTO product
-		(name, sku, price, marca, description, category_id, volume, ncm, ean)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+		(name, sku, price, marca, description, category_id, volume, ncm, ean, weight)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`)).
 		WithArgs(
 			product.Name,
@@ -53,6 +54,7 @@ func TestCreate(t *testing.T) {
 			product.Volume.String(),
 			product.NCM,
 			product.EAN,
+			product.Weight,
 		).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
@@ -88,13 +90,14 @@ func TestUpdateExpense(t *testing.T) {
 		Active:      true,
 		NCM:         nil,
 		EAN:         nil,
+		Weight:      nil,
 	}
 
 	mock.ExpectBegin()
 
 	mock.ExpectExec(regexp.QuoteMeta(`
 		UPDATE product
-		SET name=?, sku=?, price=?, marca=?, description=?, active=?, category_id=?, volume=?, ncm=?, ean=?
+		SET name=?, sku=?, price=?, marca=?, description=?, active=?, category_id=?, volume=?, ncm=?, ean=?, weight=?
 		WHERE id=?
 	`)).
 		WithArgs(
@@ -108,6 +111,7 @@ func TestUpdateExpense(t *testing.T) {
 			product.Volume.String(),
 			product.NCM,
 			product.EAN,
+			product.Weight,
 			product.ID,
 		).
 		WillReturnResult(sqlmock.NewResult(0, 1))
@@ -141,7 +145,7 @@ func TestGetByID(t *testing.T) {
 	defer db.Close()
 
 	rows := sqlmock.NewRows([]string{
-		"id", "name", "sku", "price", "marca", "description", "active", "category_id", "volume", "ncm", "ean",
+		"id", "name", "sku", "price", "marca", "description", "active", "category_id", "volume", "ncm", "ean", "weight",
 	}).AddRow(
 		1,
 		"Produto",
@@ -154,10 +158,11 @@ func TestGetByID(t *testing.T) {
 		nil, // volume NULL para testar
 		"",
 		"",
+		nil, // weight NULL para testar
 	)
 
 	mock.ExpectQuery(regexp.QuoteMeta(`
-		SELECT id, name, sku, price, marca, description, active, category_id, volume, ncm, ean
+		SELECT id, name, sku, price, marca, description, active, category_id, volume, ncm, ean, weight
 		FROM product WHERE id=?
 	`)).
 		WithArgs(1).
@@ -186,6 +191,56 @@ func TestGetByID(t *testing.T) {
 	}
 }
 
+func TestGetBySKU(t *testing.T) {
+	db, mock, dao := setupExpenses(t)
+	defer db.Close()
+
+	rows := sqlmock.NewRows([]string{
+		"id", "name", "sku", "price", "marca", "description", "active", "category_id", "volume", "ncm", "ean", "weight",
+	}).AddRow(
+		1,
+		"Produto",
+		"SKU",
+		"15.50",
+		"Marca",
+		"Descricao",
+		true,
+		nil,
+		nil, // volume NULL para testar
+		"",
+		"",
+		nil, // weight NULL para testar
+	)
+
+	mock.ExpectQuery(regexp.QuoteMeta(`
+		SELECT id, name, sku, price, marca, description, active, category_id, volume, ncm, ean, weight
+		FROM product WHERE sku=?
+	`)).
+		WithArgs("SKU").
+		WillReturnRows(rows)
+
+	mock.ExpectQuery("SELECT id, product_id, name, value").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "product_id", "name", "value"}))
+
+	mock.ExpectQuery("SELECT id, product_id, url, position, is_primary").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "product_id", "url", "position", "is_primary"}))
+
+	mock.ExpectQuery("SELECT id, product_id, url, provider").
+		WillReturnRows(sqlmock.NewRows([]string{"id", "product_id", "url", "provider"}))
+
+	p, err := dao.GetBySKU("SKU")
+	if err != nil {
+		t.Fatalf("erro inesperado: %v", err)
+	}
+
+	if p.ID != 1 {
+		t.Fatalf("produto incorreto")
+	}
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("expectativas não atendidas: %v", err)
+	}
+}
 func TestDeleteExpense(t *testing.T) {
 	db, mock, dao := setupExpenses(t)
 	defer db.Close()
