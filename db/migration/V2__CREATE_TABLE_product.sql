@@ -21,3 +21,25 @@ ADD COLUMN ean VARCHAR(14) NULL;
 
 ALTER TABLE product
 ADD COLUMN weight DECIMAL(12,2) NULL;
+
+ALTER TABLE product
+ADD COLUMN is_kit TINYINT(1) DEFAULT 0;
+
+
+CREATE TABLE product_kit (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    product_id BIGINT NOT NULL,         -- o KIT (produto pai)
+    component_product_id BIGINT NOT NULL, -- produto que compõe o kit
+    quantity INT NOT NULL DEFAULT 1,
+
+    PRIMARY KEY (id),
+
+    CONSTRAINT fk_product_kit_parent
+        FOREIGN KEY (product_id)
+        REFERENCES product(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_product_kit_component
+        FOREIGN KEY (component_product_id)
+        REFERENCES product(id)
+);

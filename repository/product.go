@@ -33,8 +33,8 @@ func (d *productDAO) Create(p *model.Product) error {
 
 	query := `
 		INSERT INTO product
-		(name, sku, price, marca, description, category_id, volume, ncm, ean, weight)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		(name, sku, price, marca, description, category_id, volume, ncm, ean, weight, is_kit)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	`
 
 	result, err := tx.Exec(
@@ -49,6 +49,7 @@ func (d *productDAO) Create(p *model.Product) error {
 		p.NCM,
 		p.EAN,
 		p.Weight,
+		p.IsKit,
 	)
 	if err != nil {
 		tx.Rollback()
@@ -75,6 +76,11 @@ func (d *productDAO) Create(p *model.Product) error {
 
 	// 🆕 marketplaces (sem upsert aqui, só insert)
 	if err := d.insertProductMarketplaces(tx, p); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err := d.insertProductKits(tx, p); err != nil {
 		tx.Rollback()
 		return err
 	}
@@ -123,7 +129,7 @@ func (d *productDAO) Update(p *model.Product) error {
 
 	query := `
 		UPDATE product
-		SET name=?, sku=?, price=?, marca=?, description=?, active=?, category_id=?, volume=?, ncm=?, ean=?, weight=?
+		SET name=?, sku=?, price=?, marca=?, description=?, active=?, category_id=?, volume=?, ncm=?, ean=?, weight=?, is_kit=?
 		WHERE id=?
 	`
 
@@ -141,6 +147,7 @@ func (d *productDAO) Update(p *model.Product) error {
 		p.NCM,
 		p.EAN,
 		p.Weight,
+		p.IsKit,
 		p.ID,
 	)
 	if err != nil {
@@ -163,12 +170,17 @@ func (d *productDAO) Update(p *model.Product) error {
 		return err
 	}
 
+	if err = d.upsertProductKits(tx, p); err != nil {
+		tx.Rollback()
+		return err
+	}
+
 	return tx.Commit()
 }
 
 func (d *productDAO) GetByID(id int64) (*model.Product, error) {
 	query := `
-		SELECT id, name, sku, price, marca, description, active, category_id, volume, ncm, ean, weight
+		SELECT id, name, sku, price, marca, description, active, category_id, volume, ncm, ean, weight, is_kit
 		FROM product WHERE id=?
 	`
 
@@ -189,6 +201,7 @@ func (d *productDAO) GetByID(id int64) (*model.Product, error) {
 		&p.NCM,
 		&p.EAN,
 		&p.Weight,
+		&p.IsKit,
 	)
 	if err != nil {
 		return nil, err
@@ -207,13 +220,13 @@ func (d *productDAO) GetByID(id int64) (*model.Product, error) {
 	d.loadImages(&p)
 	d.loadVideos(&p)
 	d.loadProductMarketplaces(&p)
-
+	d.loadProductKits(&p)
 	return &p, nil
 }
 
 func (d *productDAO) GetBySKU(sku string) (*model.Product, error) {
 	query := `
-		SELECT id, name, sku, price, marca, description, active, category_id, volume, ncm, ean, weight
+		SELECT id, name, sku, price, marca, description, active, category_id, volume, ncm, ean, weight, is_kit
 		FROM product WHERE sku=?
 	`
 	var p model.Product
@@ -232,6 +245,7 @@ func (d *productDAO) GetBySKU(sku string) (*model.Product, error) {
 		&p.NCM,
 		&p.EAN,
 		&p.Weight,
+		&p.IsKit,
 	)
 	if err != nil {
 		return nil, err
@@ -248,6 +262,7 @@ func (d *productDAO) GetBySKU(sku string) (*model.Product, error) {
 	d.loadImages(&p)
 	d.loadVideos(&p)
 	d.loadProductMarketplaces(&p)
+	d.loadProductKits(&p)
 	return &p, nil
 }
 
@@ -258,7 +273,7 @@ func (d *productDAO) Delete(id int64) error {
 
 func (d *productDAO) List() ([]model.Product, error) {
 	rows, err := d.db.Query(`
-		SELECT id, name, sku, price, marca, description, active, category_id, volume, ncm, ean, weight
+		SELECT id, name, sku, price, marca, description, active, category_id, volume, ncm, ean, weight, is_kit
 		FROM product order by sku
 	`)
 	if err != nil {
@@ -285,6 +300,7 @@ func (d *productDAO) List() ([]model.Product, error) {
 			&p.NCM,
 			&p.EAN,
 			&p.Weight,
+			&p.IsKit,
 		)
 
 		p.Price, _ = decimal.NewFromString(price)
@@ -294,7 +310,7 @@ func (d *productDAO) List() ([]model.Product, error) {
 		d.loadVideos(&p)
 		d.loadCategory(&p)
 		d.loadProductMarketplaces(&p)
-
+		d.loadProductKits(&p)
 		list = append(list, p)
 	}
 
@@ -482,4 +498,98 @@ func (d *productDAO) loadCategory(p *model.Product) {
 			p.Category = c
 		}
 	}
+}
+func (d *productDAO) insertProductKits(tx *sql.Tx, p *model.Product) error {
+	query := `
+		INSERT INTO product_kit
+			(product_id, component_product_id, quantity)
+		VALUES (?, ?, ?)
+	`
+
+	for _, pk := range p.KitComponents {
+
+		_, err := tx.Exec(
+			query,
+			p.ID,                  // produto pai (kit)
+			pk.ComponentProductID, // componente
+			pk.Quantity,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (d *productDAO) loadProductKits(p *model.Product) {
+	rows, err := d.db.Query(
+		`SELECT 
+			id, product_id, component_product_id, quantity
+		FROM product_kit 
+		WHERE product_id = ?`, p.ID,
+	)
+	if err != nil {
+		return // pode logar se quiser
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var pk model.ProductKit
+
+		err := rows.Scan(
+			&pk.ID,
+			&pk.ProductID,
+			&pk.ComponentProductID,
+			&pk.Quantity,
+		)
+		if err != nil {
+			continue
+		}
+
+		p.KitComponents = append(p.KitComponents, pk)
+	}
+
+}
+
+func (d *productDAO) upsertProductKits(tx *sql.Tx, p *model.Product) error {
+	// 🔥 remove tudo antes (evita duplicação)
+	_, err := tx.Exec(
+		`DELETE FROM product_kit WHERE product_id = ?`,
+		p.ID,
+	)
+	if err != nil {
+		return err
+	}
+
+	// 🔥 reinsere
+	query := `
+		INSERT INTO product_kit
+			(product_id, component_product_id, quantity)
+		VALUES (?, ?, ?)
+	`
+
+	for _, pk := range p.KitComponents {
+
+		// validações básicas
+		if pk.Quantity <= 0 {
+			continue
+		}
+
+		if pk.ComponentProductID == p.ID {
+			continue
+		}
+
+		_, err := tx.Exec(
+			query,
+			p.ID,
+			pk.ComponentProductID,
+			pk.Quantity,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
