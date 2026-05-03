@@ -73,7 +73,46 @@ func (d *productDAO) Create(p *model.Product) error {
 		return err
 	}
 
+	// 🆕 marketplaces (sem upsert aqui, só insert)
+	if err := d.insertProductMarketplaces(tx, p); err != nil {
+		tx.Rollback()
+		return err
+	}
+
 	return tx.Commit()
+}
+func (d *productDAO) insertProductMarketplaces(tx *sql.Tx, p *model.Product) error {
+	query := `
+		INSERT INTO product_marketplace
+			(product_id, marketplace_id, external_id, product_url, price, listing_type, status, active)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+	`
+
+	for _, pm := range p.ProductMarketplaces {
+		var price interface{}
+		if pm.Price != nil {
+			price = pm.Price.String()
+		} else {
+			price = nil
+		}
+
+		_, err := tx.Exec(
+			query,
+			p.ID,
+			pm.MarketplaceID,
+			pm.ExternalID,
+			pm.ProductURL,
+			price,
+			pm.ListingType,
+			pm.Status,
+			pm.Active,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (d *productDAO) Update(p *model.Product) error {
@@ -118,6 +157,11 @@ func (d *productDAO) Update(p *model.Product) error {
 	d.insertProperties(tx, p)
 	d.insertImages(tx, p)
 	d.insertVideos(tx, p)
+	// 🆕 marketplaces
+	if err = d.upsertProductMarketplaces(tx, p); err != nil {
+		tx.Rollback()
+		return err
+	}
 
 	return tx.Commit()
 }
@@ -162,6 +206,7 @@ func (d *productDAO) GetByID(id int64) (*model.Product, error) {
 	d.loadProperties(&p)
 	d.loadImages(&p)
 	d.loadVideos(&p)
+	d.loadProductMarketplaces(&p)
 
 	return &p, nil
 }
@@ -202,6 +247,7 @@ func (d *productDAO) GetBySKU(sku string) (*model.Product, error) {
 	d.loadProperties(&p)
 	d.loadImages(&p)
 	d.loadVideos(&p)
+	d.loadProductMarketplaces(&p)
 	return &p, nil
 }
 
@@ -247,6 +293,7 @@ func (d *productDAO) List() ([]model.Product, error) {
 		d.loadImages(&p)
 		d.loadVideos(&p)
 		d.loadCategory(&p)
+		d.loadProductMarketplaces(&p)
 
 		list = append(list, p)
 	}
@@ -344,6 +391,86 @@ func (d *productDAO) loadVideos(p *model.Product) {
 		rows.Scan(&v.ID, &v.ProductID, &v.URL, &v.Provider)
 		p.Videos = append(p.Videos, v)
 	}
+}
+func (d *productDAO) loadProductMarketplaces(p *model.Product) {
+	rows, err := d.db.Query(
+		`SELECT 
+			id, product_id, marketplace_id,
+			external_id, product_url,
+			price, listing_type, status,
+			created_at, updated_at, active
+		FROM product_marketplace 
+		WHERE product_id = ?`, p.ID,
+	)
+	if err != nil {
+		return // você pode logar o erro se quiser
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var pm model.ProductMarketplace
+
+		err := rows.Scan(
+			&pm.ID,
+			&pm.ProductID,
+			&pm.MarketplaceID,
+			&pm.ExternalID,
+			&pm.ProductURL,
+			&pm.Price,
+			&pm.ListingType,
+			&pm.Status,
+			&pm.CreatedAt,
+			&pm.UpdatedAt,
+			&pm.Active,
+		)
+		if err != nil {
+			continue
+		}
+
+		p.ProductMarketplaces = append(p.ProductMarketplaces, pm)
+	}
+}
+
+func (d *productDAO) upsertProductMarketplaces(tx *sql.Tx, p *model.Product) error {
+	query := `
+		INSERT INTO product_marketplace 
+			(product_id, marketplace_id, external_id, product_url, price, listing_type, status, active)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+		ON DUPLICATE KEY UPDATE
+			external_id = VALUES(external_id),
+			product_url = VALUES(product_url),
+			price = VALUES(price),
+			listing_type = VALUES(listing_type),
+			status = VALUES(status),
+			active = VALUES(active),
+			updated_at = CURRENT_TIMESTAMP
+	`
+
+	for _, pm := range p.ProductMarketplaces {
+		var price interface{}
+		if pm.Price != nil {
+			price = pm.Price.String()
+		} else {
+			price = nil
+		}
+
+		_, err := tx.Exec(
+			query,
+			p.ID,
+			pm.MarketplaceID,
+			pm.ExternalID,
+			pm.ProductURL,
+			price,
+			pm.ListingType,
+			pm.Status,
+			pm.Active,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (d *productDAO) loadCategory(p *model.Product) {
