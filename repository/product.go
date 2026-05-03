@@ -259,7 +259,7 @@ func (d *productDAO) Delete(id int64) error {
 func (d *productDAO) List() ([]model.Product, error) {
 	rows, err := d.db.Query(`
 		SELECT id, name, sku, price, marca, description, active, category_id, volume, ncm, ean, weight
-		FROM product
+		FROM product order by sku
 	`)
 	if err != nil {
 		return nil, err
