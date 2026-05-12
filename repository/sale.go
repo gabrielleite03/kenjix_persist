@@ -463,23 +463,21 @@ func (d *salesOrderDAO) List() ([]model.SalesOrder, error) {
 		m.id,
 		m.name,
 		m.commission_rate,
-        m.logo,
-        m.status, 
-        m.integration_type,
-        m.api_url,
-        m.api_key,
-        m.api_secret,
-        m.api_endpoint,
-        m.created_at, m.deleted_at
+		m.logo,
+		m.status,
+		m.integration_type,
+		m.api_url,
+		m.api_key,
+		m.api_secret,
+		m.api_endpoint,
+		m.created_at,
+		m.deleted_at
 
 	FROM sales_order so
-
 	INNER JOIN payment_method pm
 		ON pm.id = so.payment_method_id
-
 	LEFT JOIN marketplace m
 		ON m.id = so.marketplace_id
-
 	ORDER BY so.created_at DESC
 	`
 
@@ -492,21 +490,17 @@ func (d *salesOrderDAO) List() ([]model.SalesOrder, error) {
 	var list []model.SalesOrder
 
 	for rows.Next() {
-
 		var s model.SalesOrder
 
 		var price, discount string
 
 		var customerName sql.NullString
 		var customerDocument sql.NullString
-
 		var marketplaceID sql.NullInt64
 		var externalOrderID sql.NullString
 		var externalPackID sql.NullString
-
 		var paymentStatus sql.NullString
 		var deliveryStatus sql.NullString
-
 		var updatedAt sql.NullTime
 
 		var paymentMethod model.PaymentMethod
@@ -515,9 +509,17 @@ func (d *salesOrderDAO) List() ([]model.SalesOrder, error) {
 		var marketplaceIDJoined sql.NullInt64
 		var marketplaceName sql.NullString
 		var marketplaceCommissionRate sql.NullString
+		var marketplaceLogo sql.NullString
+		var marketplaceStatus sql.NullString
+		var marketplaceIntegrationType sql.NullString
+		var marketplaceAPIURL sql.NullString
+		var marketplaceAPIKey sql.NullString
+		var marketplaceAPISecret sql.NullString
+		var marketplaceAPIEndpoint sql.NullString
+		var marketplaceCreatedAt sql.NullTime
+		var marketplaceDeletedAt sql.NullTime
 
 		err := rows.Scan(
-
 			&s.ID,
 			&price,
 			&discount,
@@ -525,17 +527,13 @@ func (d *salesOrderDAO) List() ([]model.SalesOrder, error) {
 			&s.PaymentMethodID,
 			&s.Active,
 			&s.CreatedAt,
-
 			&customerName,
 			&customerDocument,
-
 			&marketplaceID,
 			&externalOrderID,
 			&externalPackID,
-
 			&paymentStatus,
 			&deliveryStatus,
-
 			&updatedAt,
 
 			&paymentMethod.ID,
@@ -545,8 +543,16 @@ func (d *salesOrderDAO) List() ([]model.SalesOrder, error) {
 			&marketplaceIDJoined,
 			&marketplaceName,
 			&marketplaceCommissionRate,
+			&marketplaceLogo,
+			&marketplaceStatus,
+			&marketplaceIntegrationType,
+			&marketplaceAPIURL,
+			&marketplaceAPIKey,
+			&marketplaceAPISecret,
+			&marketplaceAPIEndpoint,
+			&marketplaceCreatedAt,
+			&marketplaceDeletedAt,
 		)
-
 		if err != nil {
 			return nil, err
 		}
@@ -557,31 +563,24 @@ func (d *salesOrderDAO) List() ([]model.SalesOrder, error) {
 		if customerName.Valid {
 			s.CustomerName = &customerName.String
 		}
-
 		if customerDocument.Valid {
 			s.CustomerDocument = &customerDocument.String
 		}
-
 		if marketplaceID.Valid {
 			s.MarketplaceID = &marketplaceID.Int64
 		}
-
 		if externalOrderID.Valid {
 			s.ExternalOrderID = &externalOrderID.String
 		}
-
 		if externalPackID.Valid {
 			s.ExternalPackID = &externalPackID.String
 		}
-
 		if paymentStatus.Valid {
 			s.PaymentStatus = &paymentStatus.String
 		}
-
 		if deliveryStatus.Valid {
 			s.DeliveryStatus = &deliveryStatus.String
 		}
-
 		if updatedAt.Valid {
 			s.UpdatedAt = &updatedAt.Time
 		}
@@ -589,13 +588,50 @@ func (d *salesOrderDAO) List() ([]model.SalesOrder, error) {
 		s.PaymentMethod = &paymentMethod
 
 		if marketplaceIDJoined.Valid {
-
 			marketplace.ID = marketplaceIDJoined.Int64
-			marketplace.Name = marketplaceName.String
+
+			if marketplaceName.Valid {
+				marketplace.Name = marketplaceName.String
+			}
 
 			if marketplaceCommissionRate.Valid {
-				marketplace.CommissionRate, _ =
-					decimal.NewFromString(marketplaceCommissionRate.String)
+				marketplace.CommissionRate, _ = decimal.NewFromString(marketplaceCommissionRate.String)
+			}
+
+			if marketplaceLogo.Valid {
+				marketplace.Logo = &marketplaceLogo.String
+			}
+
+			if marketplaceStatus.Valid {
+				marketplace.Status = marketplaceStatus.String
+			}
+
+			if marketplaceIntegrationType.Valid {
+				marketplace.IntegrationType = marketplaceIntegrationType.String
+			}
+
+			if marketplaceAPIURL.Valid {
+				marketplace.APIURL = &marketplaceAPIURL.String
+			}
+
+			if marketplaceAPIKey.Valid {
+				marketplace.APIKey = &marketplaceAPIKey.String
+			}
+
+			if marketplaceAPISecret.Valid {
+				marketplace.APISecret = &marketplaceAPISecret.String
+			}
+
+			if marketplaceAPIEndpoint.Valid {
+				marketplace.APIEndpoint = &marketplaceAPIEndpoint.String
+			}
+
+			if marketplaceCreatedAt.Valid {
+				marketplace.CreatedAt = marketplaceCreatedAt.Time
+			}
+
+			if marketplaceDeletedAt.Valid {
+				marketplace.DeletedAt = &marketplaceDeletedAt.Time
 			}
 
 			s.Marketplace = &marketplace
@@ -607,6 +643,10 @@ func (d *salesOrderDAO) List() ([]model.SalesOrder, error) {
 		}
 
 		list = append(list, s)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return list, nil
