@@ -23,3 +23,9 @@ CREATE TABLE product_marketplace (
 
     UNIQUE KEY uniq_product_marketplace (product_id, marketplace_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE product_marketplace
+ADD UNIQUE KEY uniq_marketplace_external_id (marketplace_id, external_id);
+
+ALTER TABLE product_marketplace
+MODIFY product_url TEXT NULL;

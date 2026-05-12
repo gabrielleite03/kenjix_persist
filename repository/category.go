@@ -96,7 +96,7 @@ func (d *categoryDAO) Delete(id int64) error {
 func (d *categoryDAO) List() ([]model.Category, error) {
 	query := `
 		SELECT id, name, description, active
-		FROM category
+		FROM category where active=true
 	`
 
 	rows, err := d.db.Query(query)
