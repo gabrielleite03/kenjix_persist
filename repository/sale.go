@@ -462,9 +462,15 @@ func (d *salesOrderDAO) List() ([]model.SalesOrder, error) {
 
 		m.id,
 		m.name,
-		m.description,
 		m.commission_rate,
-		m.active
+        m.logo,
+        m.status, 
+        m.integration_type,
+        m.api_url,
+        m.api_key,
+        m.api_secret,
+        m.api_endpoint,
+        m.created_at, m.deleted_at
 
 	FROM sales_order so
 
@@ -508,9 +514,7 @@ func (d *salesOrderDAO) List() ([]model.SalesOrder, error) {
 		var marketplace model.Marketplace
 		var marketplaceIDJoined sql.NullInt64
 		var marketplaceName sql.NullString
-		var marketplaceDescription sql.NullString
 		var marketplaceCommissionRate sql.NullString
-		var marketplaceActive sql.NullBool
 
 		err := rows.Scan(
 
@@ -540,9 +544,7 @@ func (d *salesOrderDAO) List() ([]model.SalesOrder, error) {
 
 			&marketplaceIDJoined,
 			&marketplaceName,
-			&marketplaceDescription,
 			&marketplaceCommissionRate,
-			&marketplaceActive,
 		)
 
 		if err != nil {
