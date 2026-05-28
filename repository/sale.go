@@ -656,6 +656,7 @@ type SalesOrderItemDAO interface {
 	Create(i *model.SalesOrderItem) error
 	ListByOrder(orderID int64) ([]model.SalesOrderItem, error)
 	DeleteByOrder(orderID int64) error
+	GetByID(id int64) (*model.SalesOrder, error)
 }
 
 type salesOrderItemDAO struct {
@@ -787,4 +788,90 @@ func (d *salesOrderItemDAO) DeleteByOrder(orderID int64) error {
 		orderID,
 	)
 	return err
+}
+
+func (r *salesOrderItemDAO) GetByID(id int64) (*model.SalesOrder, error) {
+	query := `
+		SELECT
+			id,
+			price,
+			discount,
+			status,
+			payment_method_id,
+			active,
+			customer_name,
+			customer_document,
+			marketplace_id,
+			external_order_id,
+			external_pack_id,
+			payment_status,
+			delivery_status,
+			created_at,
+			updated_at
+		FROM sales_order
+		WHERE id = ?
+		LIMIT 1
+	`
+
+	var sale model.SalesOrder
+	var price, discount string
+	var customerName sql.NullString
+	var customerDocument sql.NullString
+	var marketplaceID sql.NullInt64
+	var externalOrderID sql.NullString
+	var externalPackID sql.NullString
+	var paymentStatus sql.NullString
+	var deliveryStatus sql.NullString
+	var updatedAt sql.NullTime
+
+	err := r.db.QueryRow(query, id).Scan(
+		&sale.ID,
+		&price,
+		&discount,
+		&sale.Status,
+		&sale.PaymentMethodID,
+		&sale.Active,
+		&customerName,
+		&customerDocument,
+		&marketplaceID,
+		&externalOrderID,
+		&externalPackID,
+		&paymentStatus,
+		&deliveryStatus,
+		&sale.CreatedAt,
+		&updatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	sale.Price, _ = decimal.NewFromString(price)
+	sale.Discount, _ = decimal.NewFromString(discount)
+
+	if customerName.Valid {
+		sale.CustomerName = &customerName.String
+	}
+	if customerDocument.Valid {
+		sale.CustomerDocument = &customerDocument.String
+	}
+	if marketplaceID.Valid {
+		sale.MarketplaceID = &marketplaceID.Int64
+	}
+	if externalOrderID.Valid {
+		sale.ExternalOrderID = &externalOrderID.String
+	}
+	if externalPackID.Valid {
+		sale.ExternalPackID = &externalPackID.String
+	}
+	if paymentStatus.Valid {
+		sale.PaymentStatus = &paymentStatus.String
+	}
+	if deliveryStatus.Valid {
+		sale.DeliveryStatus = &deliveryStatus.String
+	}
+	if updatedAt.Valid {
+		sale.UpdatedAt = &updatedAt.Time
+	}
+
+	return &sale, nil
 }
