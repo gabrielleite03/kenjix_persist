@@ -37,3 +37,45 @@ CREATE TABLE nfe_issuers (
             (cnpj IS NULL AND cpf IS NOT NULL)
         )
 );
+
+
+
+INSERT INTO nfe_issuers (
+    cnpj,
+    cpf,
+    razao_social,
+    nome_fantasia,
+    inscricao_estadual,
+    crt,
+    logradouro,
+    numero,
+    complemento,
+    bairro,
+    codigo_mun,
+    municipio,
+    uf,
+    cep,
+    codigo_pais,
+    pais,
+    telefone,
+    active
+) VALUES (
+    '65468523000102',
+    NULL,
+    'KENJI IMPORTACAO E COMERCIO LTDA',
+    NULL,
+    '158447676112',
+    '1',
+    'Rua A',
+    '100',
+    NULL,
+    'Centro',
+    '3550308',
+    'Sao Paulo',
+    'SP',
+    '01001000',
+    '1058',
+    'Brasil',
+    NULL,
+    TRUE
+);

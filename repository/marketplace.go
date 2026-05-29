@@ -34,8 +34,9 @@ func (r *marketplaceDAO) Create(ctx context.Context, m *model.Marketplace) error
 		INSERT INTO marketplace (
 			name, logo, status, commission_rate, integration_type,
 			api_url, api_key, api_secret, api_endpoint,
+			intermediary_cnpj, intermediary_name, seller_account_id,
 			created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
 	`
 
 	result, err := r.db.ExecContext(ctx, query,
@@ -48,6 +49,9 @@ func (r *marketplaceDAO) Create(ctx context.Context, m *model.Marketplace) error
 		m.APIKey,
 		m.APISecret,
 		m.APIEndpoint,
+		m.IntermediaryCNPJ,
+		m.IntermediaryName,
+		m.SellerAccountID,
 	)
 	if err != nil {
 		return err
@@ -74,6 +78,9 @@ func (r *marketplaceDAO) Update(ctx context.Context, m *model.Marketplace) error
 			api_key = ?,
 			api_secret = ?,
 			api_endpoint = ?,
+			intermediary_cnpj = ?,
+			intermediary_name = ?,
+			seller_account_id = ?,
 			updated_at = NOW()
 		WHERE id = ? AND deleted_at IS NULL
 	`
@@ -88,6 +95,9 @@ func (r *marketplaceDAO) Update(ctx context.Context, m *model.Marketplace) error
 		m.APIKey,
 		m.APISecret,
 		m.APIEndpoint,
+		m.IntermediaryCNPJ,
+		m.IntermediaryName,
+		m.SellerAccountID,
 		m.ID,
 	)
 
@@ -99,6 +109,7 @@ func (r *marketplaceDAO) FindByID(ctx context.Context, id int64) (*model.Marketp
 		SELECT 
 			id, name, logo, status, commission_rate, integration_type,
 			api_url, api_key, api_secret, api_endpoint,
+			intermediary_cnpj, intermediary_name, seller_account_id,
 			created_at, updated_at, deleted_at
 		FROM marketplace
 		WHERE id = ? AND deleted_at IS NULL
@@ -117,6 +128,9 @@ func (r *marketplaceDAO) FindByID(ctx context.Context, id int64) (*model.Marketp
 		&m.APIKey,
 		&m.APISecret,
 		&m.APIEndpoint,
+		&m.IntermediaryCNPJ,
+		&m.IntermediaryName,
+		&m.SellerAccountID,
 		&m.CreatedAt,
 		&m.UpdatedAt,
 		&m.DeletedAt,
@@ -137,6 +151,7 @@ func (r *marketplaceDAO) FindAll(ctx context.Context) ([]model.Marketplace, erro
 		SELECT 
 			id, name, logo, status, commission_rate, integration_type,
 			api_url, api_key, api_secret, api_endpoint,
+			intermediary_cnpj, intermediary_name, seller_account_id,
 			created_at, updated_at, deleted_at
 		FROM marketplace
 		WHERE deleted_at IS NULL
@@ -165,6 +180,9 @@ func (r *marketplaceDAO) FindAll(ctx context.Context) ([]model.Marketplace, erro
 			&m.APIKey,
 			&m.APISecret,
 			&m.APIEndpoint,
+			&m.IntermediaryCNPJ,
+			&m.IntermediaryName,
+			&m.SellerAccountID,
 			&m.CreatedAt,
 			&m.UpdatedAt,
 			&m.DeletedAt,

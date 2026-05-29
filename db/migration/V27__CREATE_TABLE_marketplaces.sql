@@ -19,3 +19,8 @@ CREATE TABLE marketplace (
     INDEX idx_marketplace_status (status),
     INDEX idx_marketplace_deleted_at (deleted_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE marketplace
+ADD COLUMN intermediary_cnpj VARCHAR(14) NULL,
+ADD COLUMN intermediary_name VARCHAR(150) NULL,
+ADD COLUMN seller_account_id VARCHAR(100) NULL;
